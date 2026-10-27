@@ -126,13 +126,16 @@ export const AppointmentWaitlistModal: React.FC<AppointmentWaitlistModalProps> =
                 <span className="font-semibold text-slate-500">Interested Home:</span>
                 <span className="font-bold text-slate-900">{confirmedBooking.interestedPlanName}</span>
               </div>
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center pb-2 border-b border-slate-200">
                 <span className="font-semibold text-slate-500">Status:</span>
                 <span className="font-bold text-emerald-700">
                   {confirmedBooking.type === 'live_waitlist' 
                     ? `Position in line: #${currentQueueLength + 1} (Est. ${Math.max(5, (currentQueueLength + 1) * 8)} min wait)` 
                     : `${confirmedBooking.date} at ${confirmedBooking.timeSlot}`}
                 </span>
+              </div>
+              <div className="pt-1 text-[11px] text-slate-500 text-center">
+                Mountain View Homes of Bremerton · 3472 W Belfair Valley Rd · (360) 979-8430
               </div>
             </div>
 

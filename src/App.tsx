@@ -14,6 +14,7 @@ import { PrintableSpecSheet } from './components/PrintableSpecSheet';
 import { AppointmentWaitlistModal } from './components/AppointmentWaitlistModal';
 import { StaffManagerModal } from './components/StaffManagerModal';
 import { AttractorScreensaver } from './components/AttractorScreensaver';
+import { OnPageTourShowcase } from './components/OnPageTourShowcase';
 import { 
   Building2, 
   Clock, 
@@ -25,27 +26,53 @@ import {
   Sliders, 
   Sparkles, 
   Ticket, 
-  Layers,
-  ArrowUpDown,
-  RotateCcw,
+  ArrowUpDown, 
+  RotateCcw, 
+  ChevronDown,
+  MapPin,
+  Phone,
+  Compass,
   CheckCircle2,
-  ChevronDown
+  ExternalLink
 } from 'lucide-react';
 
+const CURRENT_CATALOG_STORAGE_KEY = 'mvh_bremerton_catalog_2026_v4';
+
 export default function App() {
-  // Inventory state initialized with all 145 spreadsheet models
+  // Inventory state: Guaranteed to load all 145 real homes from spreadsheet
   const [floorplans, setFloorplans] = useState<Floorplan[]>(() => {
-    const saved = localStorage.getItem('kiosk_floorplans');
-    return saved ? JSON.parse(saved) : INITIAL_FLOORPLANS;
+    try {
+      // Clean up any stale legacy keys from earlier prototypes
+      localStorage.removeItem('kiosk_floorplans');
+      localStorage.removeItem('kiosk_floorplans_v2');
+      localStorage.removeItem('kiosk_floorplans_v3');
+      localStorage.removeItem('mvh_kiosk_floorplans_v4');
+
+      const saved = localStorage.getItem(CURRENT_CATALOG_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Ensure the saved data has the full spreadsheet inventory
+        if (Array.isArray(parsed) && parsed.length >= INITIAL_FLOORPLANS.length && parsed[0]?.id === INITIAL_FLOORPLANS[0]?.id) {
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.warn('Error reading catalog from localStorage:', e);
+    }
+    // Default to the full spreadsheet inventory
+    return INITIAL_FLOORPLANS;
   });
 
   // Bookings / Waitlist queue state
   const [bookings, setBookings] = useState<AppointmentBooking[]>(() => {
-    const saved = localStorage.getItem('kiosk_bookings');
+    const saved = localStorage.getItem('mvh_bremerton_bookings_v2');
     return saved ? JSON.parse(saved) : INITIAL_BOOKINGS;
   });
 
-  // Comprehensive Filter State
+  // Top view mode: 'catalog' | '3d-theater' | 'dealership-info'
+  const [activeViewMode, setActiveViewMode] = useState<'catalog' | '3d-theater' | 'dealership-info'>('catalog');
+
+  // Filter State
   const [selectedManufacturer, setSelectedManufacturer] = useState<string>('All');
   const [selectedSeries, setSelectedSeries] = useState<string>('All');
   const [selectedSection, setSelectedSection] = useState<string>('All');
@@ -54,8 +81,18 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [sortBy, setSortBy] = useState<'featured' | 'price-asc' | 'price-desc' | 'sqft-desc' | 'sqft-asc' | 'name-asc'>('featured');
 
-  // Progressive rendering / pagination (18 items per page for silky touchscreen speed)
+  // Progressive rendering / pagination (18 items per page)
   const [visibleCount, setVisibleCount] = useState<number>(18);
+
+  // Filter list of homes that have 3D virtual tours (69 models)
+  const floorplansWithTours = useMemo(() => {
+    return floorplans.filter(f => f.hasTour && f.primaryTour);
+  }, [floorplans]);
+
+  // Active home displayed in the On-Page 3D Theater
+  const [onPageTourPlan, setOnPageTourPlan] = useState<Floorplan>(() => {
+    return floorplans.find(f => f.hasTour && f.id === 'gw-dream-silver-casita') || floorplans.find(f => f.hasTour) || floorplans[0];
+  });
 
   // Active Modals
   const [activeTourPlan, setActiveTourPlan] = useState<Floorplan | null>(null);
@@ -76,8 +113,8 @@ export default function App() {
   const resetInactivityTimer = () => {
     if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
     inactivityTimerRef.current = setTimeout(() => {
-      // Only show screensaver if no active 3D tour or detail modal is currently in use
-      if (!activeTourPlan && !activeDetailPlan && !activePrintPlan && !isAppointmentModalOpen) {
+      // Only show screensaver if no active modal is currently in use
+      if (!activeTourPlan && !activeDetailPlan && !activePrintPlan && !isAppointmentModalOpen && !isStaffModalOpen) {
         setIsScreensaverActive(true);
       }
     }, 120000); // 2 minutes
@@ -99,33 +136,33 @@ export default function App() {
       window.removeEventListener('keydown', onUserActivity);
       if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
     };
-  }, [activeTourPlan, activeDetailPlan, activePrintPlan, isAppointmentModalOpen]);
+  }, [activeTourPlan, activeDetailPlan, activePrintPlan, isAppointmentModalOpen, isStaffModalOpen]);
 
-  // Persist bookings & floorplans to localStorage
+  // Persist floorplans & bookings to localStorage
   useEffect(() => {
-    localStorage.setItem('kiosk_floorplans', JSON.stringify(floorplans));
+    localStorage.setItem(CURRENT_CATALOG_STORAGE_KEY, JSON.stringify(floorplans));
   }, [floorplans]);
 
   useEffect(() => {
-    localStorage.setItem('kiosk_bookings', JSON.stringify(bookings));
+    localStorage.setItem('mvh_bremerton_bookings_v2', JSON.stringify(bookings));
   }, [bookings]);
 
-  // Reset pagination whenever any filter or search changes
+  // Reset pagination on filter change
   useEffect(() => {
     setVisibleCount(18);
   }, [selectedManufacturer, selectedSeries, selectedSection, selectedBeds, tourOnly, searchQuery, sortBy]);
 
-  // Calculate distinct counts for badges
+  // Counts for badges
   const stats = useMemo(() => {
     const total = floorplans.length;
     const goldenWestCount = floorplans.filter(f => f.manufacturer === 'Golden West').length;
     const marletteCount = floorplans.filter(f => f.manufacturer === 'Marlette').length;
     const claytonCount = floorplans.filter(f => f.manufacturer === 'Clayton Homes').length;
-    const toursCount = floorplans.filter(f => f.hasTour).length;
+    const toursCount = floorplansWithTours.length;
     return { total, goldenWestCount, marletteCount, claytonCount, toursCount };
-  }, [floorplans]);
+  }, [floorplans, floorplansWithTours]);
 
-  // Available Series options based on selected manufacturer
+  // Available Series based on manufacturer
   const availableSeries = useMemo(() => {
     let pool = floorplans;
     if (selectedManufacturer !== 'All') {
@@ -163,8 +200,13 @@ export default function App() {
     // 2. Direct Actions
     switch (result.action) {
       case 'open_3d_tour':
-        setActiveDetailPlan(null);
-        setActiveTourPlan(matchedPlan);
+        if (matchedPlan.hasTour) {
+          setOnPageTourPlan(matchedPlan);
+          setActiveViewMode('3d-theater');
+          setActiveTourPlan(matchedPlan);
+        } else {
+          setActiveDetailPlan(matchedPlan);
+        }
         break;
       case 'open_floorplan':
         setActiveTourPlan(null);
@@ -178,7 +220,6 @@ export default function App() {
         setIsAppointmentModalOpen(true);
         break;
       default:
-        // default filter_catalog
         break;
     }
   };
@@ -186,26 +227,18 @@ export default function App() {
   // Filtered & Sorted Floorplans
   const filteredAndSortedFloorplans = useMemo(() => {
     const list = floorplans.filter(plan => {
-      // Manufacturer filter
       if (selectedManufacturer !== 'All' && plan.manufacturer !== selectedManufacturer) return false;
-      
-      // Series filter
       if (selectedSeries !== 'All' && plan.series !== selectedSeries) return false;
       
-      // Section / Width filter
       if (selectedSection !== 'All') {
         if (selectedSection === 'Single' && plan.sections !== 'Single') return false;
         if (selectedSection === 'Double' && plan.sections !== 'Double') return false;
         if (selectedSection === 'Triple' && plan.sections !== 'Triple') return false;
       }
 
-      // Bedrooms filter
       if (selectedBeds !== 'All' && plan.bedrooms < (selectedBeds as number)) return false;
-
-      // 3D Tour Only filter
       if (tourOnly && !plan.hasTour) return false;
 
-      // Keyword search
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const matchName = plan.name.toLowerCase().includes(q);
@@ -220,7 +253,6 @@ export default function App() {
       return true;
     });
 
-    // Sorting
     list.sort((a, b) => {
       switch (sortBy) {
         case 'price-asc':
@@ -235,7 +267,6 @@ export default function App() {
           return a.name.localeCompare(b.name);
         case 'featured':
         default:
-          // Homes with real 3D tours first, then larger square feet
           if (a.hasTour !== b.hasTour) return a.hasTour ? -1 : 1;
           return b.squareFeet - a.squareFeet;
       }
@@ -244,9 +275,7 @@ export default function App() {
     return list;
   }, [floorplans, selectedManufacturer, selectedSeries, selectedSection, selectedBeds, tourOnly, searchQuery, sortBy]);
 
-  // Current slice for progressive rendering
   const displayedFloorplans = filteredAndSortedFloorplans.slice(0, visibleCount);
-
   const activeQueueCount = bookings.filter(b => b.type === 'live_waitlist' && b.status === 'waiting').length;
 
   const resetAllFilters = () => {
@@ -281,13 +310,19 @@ export default function App() {
         />
       )}
 
-      {/* Top Bar Contract (1-line Brand, Clean links, 1 primary action) */}
+      {/* Top Bar with Seal Logo & Primary Actions */}
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/90 no-print">
-        <div className="max-w-7xl mx-auto px-6 h-18 flex items-center justify-between gap-8">
+        <div className="max-w-7xl mx-auto px-6 h-18 flex items-center justify-between gap-6">
           
-          {/* Zone 1: Single Text Element Wordmark with Official Logo */}
+          {/* Brand Wordmark with Official Seal */}
           <div className="flex items-center gap-3 shrink-0">
-            <a href="/" className="flex items-center gap-2.5 text-slate-900 whitespace-nowrap shrink-0">
+            <button 
+              onClick={() => {
+                setActiveViewMode('catalog');
+                resetAllFilters();
+              }}
+              className="flex items-center gap-2.5 text-slate-900 whitespace-nowrap shrink-0 text-left cursor-pointer"
+            >
               <img 
                 src="/assets/aistudio/mvhBremertonCap_8f5d5a13.png" 
                 alt="Mountain View Homes of Bremerton Logo"
@@ -301,40 +336,51 @@ export default function App() {
                   of Bremerton
                 </span>
               </div>
-            </a>
-            <span className="hidden sm:inline-block text-[11px] font-mono text-slate-500 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200">
-              Kiosk Terminal #1 · 145 Models
+            </button>
+            <span className="hidden sm:inline-block text-[11px] font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">
+              Kiosk #1 · 145 Models
             </span>
           </div>
 
-          {/* Zone 2: 4 Clean Single-Line Text Links */}
-          <nav className="hidden lg:flex items-center gap-8 text-sm font-semibold text-slate-600">
-            <button 
-              onClick={resetAllFilters}
-              className="hover:text-slate-900 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
-            >
-              Floorplans Catalog
-            </button>
+          {/* Clean Navigation Links with 3D Tour Theater */}
+          <nav className="hidden md:flex items-center gap-6 text-sm font-semibold text-slate-600">
             <button 
               onClick={() => {
-                setTourOnly(true);
-                const firstWithTour = floorplans.find(f => f.hasTour) || floorplans[0];
-                setActiveTourPlan(firstWithTour);
+                setActiveViewMode('catalog');
+                setTourOnly(false);
               }}
-              className="hover:text-slate-900 transition-colors whitespace-nowrap shrink-0 flex items-center gap-1.5 cursor-pointer"
+              className={`transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                activeViewMode === 'catalog' && !tourOnly ? 'text-slate-900 font-bold' : 'hover:text-slate-900'
+              }`}
             >
-              <Eye className="w-4 h-4 text-emerald-600" />
+              Floorplans Catalog ({stats.total})
+            </button>
+            
+            <button 
+              onClick={() => {
+                setActiveViewMode('3d-theater');
+                setTourOnly(true);
+              }}
+              className={`transition-colors whitespace-nowrap shrink-0 flex items-center gap-1.5 cursor-pointer px-2.5 py-1 rounded-lg ${
+                activeViewMode === '3d-theater' || tourOnly 
+                  ? 'bg-emerald-50 text-emerald-800 font-bold border border-emerald-200' 
+                  : 'hover:text-slate-900 text-slate-700'
+              }`}
+            >
+              <Eye className="w-4 h-4 text-emerald-600 animate-pulse" />
               <span>3D Virtual Tours ({stats.toursCount})</span>
             </button>
+
             <button 
-              onClick={() => {
-                setAppointmentSelectedPlan(null);
-                setIsAppointmentModalOpen(true);
-              }}
-              className="hover:text-slate-900 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+              onClick={() => setActiveViewMode('dealership-info')}
+              className={`transition-colors whitespace-nowrap shrink-0 flex items-center gap-1.5 cursor-pointer ${
+                activeViewMode === 'dealership-info' ? 'text-slate-900 font-bold' : 'hover:text-slate-900'
+              }`}
             >
-              Sales Appointments
+              <MapPin className="w-3.5 h-3.5 text-slate-500" />
+              <span>Showroom Info</span>
             </button>
+
             <button 
               onClick={() => setIsStaffModalOpen(true)}
               className="hover:text-slate-900 transition-colors whitespace-nowrap shrink-0 flex items-center gap-1.5 text-slate-500 cursor-pointer"
@@ -344,7 +390,7 @@ export default function App() {
             </button>
           </nav>
 
-          {/* Zone 3: 1 Primary Action */}
+          {/* Join Showroom Waitlist */}
           <div className="flex items-center gap-3 shrink-0">
             <button
               onClick={() => {
@@ -391,7 +437,7 @@ export default function App() {
                 Pacific Northwest Manufactured & Modular Living
               </h1>
               <p className="text-xs md:text-sm text-slate-300 leading-relaxed">
-                Explore {stats.total} factory-built homes engineered for Kitsap County, Mason County, and the Olympic Peninsula. Step inside {stats.toursCount} interactive 3D virtual tours, customize finishes, and print take-home specification sheets.
+                Explore {stats.total} factory-built homes from Golden West, Marlette, and Clayton Homes. Step inside {stats.toursCount} interactive 3D virtual tours right on this kiosk screen, customize finishes, and print take-home specification sheets.
               </p>
             </div>
 
@@ -401,7 +447,7 @@ export default function App() {
                 <Clock className="w-6 h-6" />
               </div>
               <div>
-                <div className="text-[10px] uppercase font-mono tracking-wider text-slate-400">Current Floor Wait Time</div>
+                <div className="text-[10px] uppercase font-mono tracking-wider text-slate-400">Current Wait Time</div>
                 <div className="text-base font-bold text-white flex items-center gap-2">
                   <span>~{Math.max(5, (activeQueueCount + 1) * 8)} Minutes</span>
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -417,10 +463,102 @@ export default function App() {
         {/* AI Voice Assistant Bar */}
         <VoiceAssistantBar onAiAction={handleAiAction} />
 
+        {/* Dealership Info Panel (when activeViewMode === 'dealership-info') */}
+        {activeViewMode === 'dealership-info' && (
+          <div className="bg-white rounded-3xl border border-slate-200/90 p-8 shadow-sm space-y-6">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <div className="flex items-center gap-3">
+                <img 
+                  src="/assets/aistudio/mvhBremertonCap_8f5d5a13.png" 
+                  alt="Mountain View Homes" 
+                  className="w-12 h-12 object-contain"
+                />
+                <div>
+                  <h2 className="text-xl font-bold text-slate-900">Mountain View Homes of Bremerton</h2>
+                  <p className="text-xs text-slate-500">Kitsap County's Premier Factory-Built Home Center</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setActiveViewMode('catalog')}
+                className="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800"
+              >
+                Back to Floorplans
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                <div className="flex items-center gap-2 text-slate-900 font-bold text-sm">
+                  <MapPin className="w-4 h-4 text-emerald-600" />
+                  <span>Bremerton Sales Center</span>
+                </div>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  3472 West Belfair Valley Road<br />
+                  Bremerton, WA 98312
+                </p>
+                <div className="pt-2">
+                  <a 
+                    href="tel:3609798430" 
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 hover:underline"
+                  >
+                    <Phone className="w-3.5 h-3.5" />
+                    <span>(360) 979-8430</span>
+                  </a>
+                </div>
+              </div>
+
+              <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                <div className="flex items-center gap-2 text-slate-900 font-bold text-sm">
+                  <Clock className="w-4 h-4 text-amber-600" />
+                  <span>Showroom Display Hours</span>
+                </div>
+                <div className="text-xs text-slate-600 space-y-1">
+                  <div><strong>Monday – Saturday:</strong> 10:00 AM – 4:00 PM</div>
+                  <div><strong>Sunday:</strong> 11:00 AM – 3:00 PM</div>
+                  <div className="text-slate-400 text-[11px] pt-1">Lot walk-ins always welcome</div>
+                </div>
+              </div>
+
+              <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                <div className="flex items-center gap-2 text-slate-900 font-bold text-sm">
+                  <Compass className="w-4 h-4 text-sky-600" />
+                  <span>Factory Builders</span>
+                </div>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Proudly featuring <strong>Clayton Built</strong>, <strong>Golden West</strong>, and <strong>Marlette Homes</strong>. Built with Pacific Northwest energy efficiency and engineered for Kitsap and Olympic Peninsula land.
+                </p>
+                <div className="pt-1 flex gap-3 text-xs text-slate-500 font-semibold">
+                  <a href="https://www.mtviewhomes.com" target="_blank" rel="noreferrer" className="text-emerald-700 hover:underline flex items-center gap-1">
+                    <span>mtviewhomes.com</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ON-PAGE INTERACTIVE 3D TOUR THEATER */}
+        {/* Shows whenever 3D theater view is active OR as the centerpiece above the catalog */}
+        {(activeViewMode === '3d-theater' || tourOnly) && (
+          <OnPageTourShowcase
+            floorplansWithTours={floorplansWithTours}
+            activeTourPlan={onPageTourPlan}
+            onSelectTourPlan={(plan) => setOnPageTourPlan(plan)}
+            onOpenFullscreen={(plan) => setActiveTourPlan(plan)}
+            onPrint={(plan) => setActivePrintPlan({ floorplan: plan, totalPrice: plan.basePrice })}
+            onCustomize={(plan) => setActiveDetailPlan(plan)}
+            onBookAppointment={(plan) => {
+              setAppointmentSelectedPlan(plan);
+              setIsAppointmentModalOpen(true);
+            }}
+          />
+        )}
+
         {/* Comprehensive Showroom Filter Toolbar */}
         <div className="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-xs space-y-4">
           
-          {/* Row 1: Manufacturer Tabs + 3D Tour Toggle + Section Controls */}
+          {/* Row 1: Manufacturer Tabs + 3D Tour Toggle */}
           <div className="flex flex-wrap items-center justify-between gap-3">
             
             {/* Manufacturer Selector */}
@@ -455,10 +593,16 @@ export default function App() {
 
             {/* Quick 3D Virtual Tour Filter Button */}
             <button
-              onClick={() => setTourOnly(!tourOnly)}
+              onClick={() => {
+                const nextTourOnly = !tourOnly;
+                setTourOnly(nextTourOnly);
+                if (nextTourOnly) {
+                  setActiveViewMode('3d-theater');
+                }
+              }}
               className={`px-3.5 py-2 text-xs font-bold rounded-xl transition-all shrink-0 cursor-pointer flex items-center gap-2 border ${
                 tourOnly
-                  ? 'bg-emerald-600 border-emerald-500 text-white shadow-sm'
+                  ? 'bg-emerald-600 border-emerald-500 text-white shadow-sm ring-2 ring-emerald-500/30'
                   : 'bg-emerald-50 border-emerald-200 text-emerald-800 hover:bg-emerald-100'
               }`}
             >
@@ -547,7 +691,7 @@ export default function App() {
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
-                placeholder="Search models, features, ADU..."
+                placeholder="Search models, Casita, ADU, Tempo..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900 bg-slate-50"
@@ -555,7 +699,7 @@ export default function App() {
               {searchQuery && (
                 <button 
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-bold"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-bold cursor-pointer"
                 >
                   ✕
                 </button>
@@ -662,7 +806,12 @@ export default function App() {
                     resetInactivityTimer();
                   }}
                   onOpenTour={(fp) => {
-                    setActiveTourPlan(fp);
+                    if (fp.hasTour) {
+                      setOnPageTourPlan(fp);
+                      setActiveTourPlan(fp);
+                    } else {
+                      setActiveDetailPlan(fp);
+                    }
                     resetInactivityTimer();
                   }}
                   onPrint={(fp) => {
@@ -709,30 +858,44 @@ export default function App() {
 
       </main>
 
-      {/* Kiosk Bottom Utility Footer */}
-      <footer className="border-t border-slate-200/90 bg-white py-4 px-6 text-xs text-slate-500 no-print">
+      {/* Kiosk Bottom Dealership Footer */}
+      <footer className="border-t border-slate-200/90 bg-white py-5 px-6 text-xs text-slate-500 no-print">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <span className="font-semibold text-slate-800">Mountain View Homes of Bremerton</span>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-bold text-slate-900">Mountain View Homes of Bremerton</span>
             <span>·</span>
-            <span>Serving Kitsap County, Olympic Peninsula & Puget Sound</span>
+            <span>3472 West Belfair Valley Rd, Bremerton, WA 98312</span>
+            <span>·</span>
+            <span className="font-semibold text-emerald-800">(360) 979-8430</span>
             <span>·</span>
             <span>HUD Certified & State Modular IRC Construction</span>
           </div>
 
           <div className="flex items-center gap-4">
             <button
+              onClick={() => {
+                localStorage.removeItem(CURRENT_CATALOG_STORAGE_KEY);
+                setFloorplans(INITIAL_FLOORPLANS);
+                resetAllFilters();
+              }}
+              className="text-slate-400 hover:text-slate-700 text-[11px] underline cursor-pointer"
+              title="Reload catalog from factory spreadsheet"
+            >
+              Refresh 145 Catalog
+            </button>
+            <span>·</span>
+            <button
               onClick={() => setIsScreensaverActive(true)}
               className="hover:text-slate-800 text-[11px] underline cursor-pointer"
             >
-              Launch Screensaver
+              Screensaver
             </button>
             <span>·</span>
             <button
               onClick={() => setIsStaffModalOpen(true)}
               className="hover:text-slate-800 text-[11px] font-semibold text-slate-700 cursor-pointer"
             >
-              Staff Admin Desk
+              Staff Desk
             </button>
           </div>
         </div>
@@ -765,7 +928,10 @@ export default function App() {
           onClose={() => setActiveDetailPlan(null)}
           onOpenTour={(fp) => {
             setActiveDetailPlan(null);
-            setActiveTourPlan(fp);
+            if (fp.hasTour) {
+              setOnPageTourPlan(fp);
+              setActiveTourPlan(fp);
+            }
           }}
           onPrint={(fp, options, calculatedPrice) => {
             setActivePrintPlan({

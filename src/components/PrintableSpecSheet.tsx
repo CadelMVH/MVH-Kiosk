@@ -94,11 +94,11 @@ export const PrintableSpecSheet: React.FC<PrintableSpecSheetProps> = ({
                       Manufactured & Modular Homes Showroom · Bremerton, WA
                     </div>
                     <div className="text-[10px] text-slate-500 mt-0.5 flex items-center gap-2">
-                      <span>Serving Kitsap County & Olympic Peninsula</span>
+                      <span>3472 West Belfair Valley Rd, Bremerton, WA 98312</span>
                       <span>·</span>
-                      <span>(360) 555-HOME</span>
+                      <span>(360) 979-8430</span>
                       <span>·</span>
-                      <span>mvhbremerton.com</span>
+                      <span>mtviewhomes.com</span>
                     </div>
                   </div>
                 </div>
@@ -210,7 +210,7 @@ export const PrintableSpecSheet: React.FC<PrintableSpecSheetProps> = ({
             <div>
               <h1 style={{ fontSize: '18px', fontWeight: 'bold', textTransform: 'uppercase', margin: 0 }}>Mountain View Homes of Bremerton</h1>
               <p style={{ fontSize: '11px', margin: '2px 0 0 0', color: '#4B5563' }}>Premier Manufactured & Modular Homes · Bremerton, WA</p>
-              <p style={{ fontSize: '10px', margin: '2px 0 0 0', color: '#6B7280' }}>Kitsap County & Olympic Peninsula · (360) 555-HOME · mvhbremerton.com</p>
+              <p style={{ fontSize: '10px', margin: '2px 0 0 0', color: '#6B7280' }}>3472 West Belfair Valley Rd, Bremerton, WA 98312 · (360) 979-8430 · mtviewhomes.com</p>
             </div>
           </div>
           <div style={{ textAlign: 'right' }}>
