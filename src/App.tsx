@@ -36,7 +36,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 
-const CURRENT_CATALOG_STORAGE_KEY = 'mvh_bremerton_catalog_2026_v4';
+const CURRENT_CATALOG_STORAGE_KEY = 'mvh_bremerton_catalog_2026_v5_master';
 
 export default function App() {
   // Inventory state: Guaranteed to load all 145 real homes from spreadsheet

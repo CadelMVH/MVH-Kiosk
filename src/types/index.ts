@@ -1,52 +1,53 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 export interface CustomOption {
   id: string;
   name: string;
   price: number;
   description: string;
-  previewColor?: string;
+  imageThumbnailUrl?: string;
 }
 
 export interface TourHotspot {
   id: string;
-  roomName: string;
-  pitch: number;
+  title: string;
   yaw: number;
+  pitch: number;
   description: string;
-  imageUrl: string;
-  keyHighlights: string[];
 }
 
 export interface Floorplan {
   id: string;
   name: string;
   manufacturer?: string;
-  series: string; // e.g. 'Dream Silver' | 'Inspiration Gold' | 'Columbia River' | 'Imagine' | 'Majestic' | 'Tempo' | 'Duplex' | 'Dream Park Model'
-  category?: string;
+  series: string;
   modelNumber?: string;
   modelName?: string;
+  category?: string;
   tagline: string;
+  description: string;
   bedrooms: number;
   bathrooms: number;
   squareFeet: number;
   width?: number;
   length?: number;
-  sections?: string; // 'Single' | 'Double' | 'Triple'
-  dimensions: string; // e.g. "28' x 56'"
+  dimensions: string;
+  sections?: string;
   basePrice: number;
   estimatedMonthly: number;
-  description: string;
-  keyFeatures: string[];
   exteriorImageUrl: string;
   photos?: string[];
-  showOnKiosk?: boolean;
+  floorplanPdf?: string;
   hasTour?: boolean;
+  tourType?: 'matterport' | 'momento360' | 'other' | 'canvas';
   primaryTour?: string;
-  tourType?: 'matterport' | 'momento360' | 'custom' | 'none' | string;
   matterportUrl?: string;
   momento360Url?: string;
   otherTourUrl?: string;
-  floorplanPdf?: string;
-  tourImagePreviewUrl?: string;
+  keyFeatures: string[];
   tourHotspots?: TourHotspot[];
   specs: {
     roofPitch: string;
@@ -73,10 +74,26 @@ export interface Floorplan {
 }
 
 export interface SelectedOptions {
-  exteriorFinishId: string;
-  kitchenPackageId: string;
-  porchPackageId: string;
-  appliancePackageId: string;
+  exteriorPackageId?: string;
+  appliancePackageId?: string;
+  bathroomPackageId?: string;
+  interiorPackageId?: string;
+  fireplacePackageId?: string;
+  energyPackageId?: string;
+  doorPackageId?: string;
+  // Décor selections
+  cabinetFinish?: string;
+  cabinetHardware?: string;
+  countertopType?: string;
+  flooringType?: string;
+  carpetType?: string;
+  interiorPaint?: string;
+  exteriorPaint?: string;
+  roofingType?: string;
+  // Legacy compatibility
+  exteriorFinishId?: string;
+  kitchenPackageId?: string;
+  porchPackageId?: string;
 }
 
 export interface AppointmentBooking {
