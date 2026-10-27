@@ -1,0 +1,6 @@
+{
+  "name": "Mountain View Homes of Bremerton — Dealership Showroom Kiosk",
+  "description": "Interactive showroom kiosk for Mountain View Homes of Bremerton. Voice-enabled natural language search with Gemini, 3D virtual walkthroughs across 69 models, custom finish configurator, one-tap spec sheet printing, and self-service appointment waitlist scheduling.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
