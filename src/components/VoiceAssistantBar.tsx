@@ -26,6 +26,8 @@ import {
   Square
 } from 'lucide-react';
 import { AiQueryResult, ClientLeadDossier, AiChatMessage } from '../types';
+import { assetUrl } from '../lib/assetUrl';
+import { queryHomer } from '../lib/homerClient';
 
 interface VoiceAssistantBarProps {
   onAiAction: (result: AiQueryResult) => void;
@@ -252,21 +254,11 @@ export const VoiceAssistantBar: React.FC<VoiceAssistantBarProps> = ({
         content: m.text
       }));
 
-      const response = await fetch('/api/ai/query', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          query: userQuery,
-          conversationHistory,
-          clientDossier
-        })
+      const data: AiQueryResult = await queryHomer({
+        query: userQuery,
+        conversationHistory,
+        clientDossier
       });
-
-      if (!response.ok) {
-        throw new Error(`Server returned ${response.status}`);
-      }
-
-      const data: AiQueryResult = await response.json();
       setLastAiResponse(data);
 
       // Update client dossier memory
@@ -351,7 +343,7 @@ export const VoiceAssistantBar: React.FC<VoiceAssistantBarProps> = ({
         <div className="flex items-center gap-2.5">
           <div className="w-7 h-7 rounded-full overflow-hidden border border-amber-400 shrink-0 shadow-sm">
             <img 
-              src="/assets/aistudio/Homerrond_bcc0bd0c.jpg" 
+              src={assetUrl("/assets/aistudio/Homerrond_bcc0bd0c.jpg")} 
               alt="HOM̂ER" 
               className="w-full h-full object-cover"
             />
@@ -584,7 +576,7 @@ export const VoiceAssistantBar: React.FC<VoiceAssistantBarProps> = ({
               <div className="flex items-start gap-3">
                 <div className="w-9 h-9 rounded-full overflow-hidden border border-amber-300 shrink-0 mt-0.5 shadow-sm">
                   <img 
-                    src="/assets/aistudio/Homerrond_bcc0bd0c.jpg" 
+                    src={assetUrl("/assets/aistudio/Homerrond_bcc0bd0c.jpg")} 
                     alt="Guide" 
                     className="w-full h-full object-cover"
                   />
@@ -696,7 +688,7 @@ export const VoiceAssistantBar: React.FC<VoiceAssistantBarProps> = ({
                   {msg.sender === 'homer' && (
                     <div className="w-8 h-8 rounded-full overflow-hidden border border-amber-300 shrink-0 mt-0.5">
                       <img 
-                        src="/assets/aistudio/Homerrond_bcc0bd0c.jpg" 
+                        src={assetUrl("/assets/aistudio/Homerrond_bcc0bd0c.jpg")} 
                         alt="Guide"
                         className="w-full h-full object-cover" 
                       />

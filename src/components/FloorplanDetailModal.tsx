@@ -26,6 +26,7 @@ import {
   Droplets,
   Palette
 } from 'lucide-react';
+import { assetUrl } from '../lib/assetUrl';
 
 interface FloorplanDetailModalProps {
   floorplan: Floorplan;
@@ -764,7 +765,7 @@ export const FloorplanDetailModal: React.FC<FloorplanDetailModalProps> = ({
                   </div>
                   {seriesStandards.pdfAssetPath && (
                     <a
-                      href={seriesStandards.pdfAssetPath}
+                      href={assetUrl(seriesStandards.pdfAssetPath)}
                       target="_blank"
                       rel="noreferrer"
                       className="flex items-center gap-2 px-4 py-2 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs rounded-xl transition-all shadow-md shrink-0"

@@ -1,10 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
+import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+import { assetUrl } from '../lib/assetUrl';
 import { Loader2, Download, ExternalLink, ZoomIn, ZoomOut, FileText, AlertCircle } from 'lucide-react';
 
 // Configure standard PDF.js worker
 if (typeof window !== 'undefined') {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+  pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 }
 
 interface FloorplanPdfRendererProps {
@@ -27,8 +29,9 @@ export const FloorplanPdfRenderer: React.FC<FloorplanPdfRendererProps> = ({
   const [zoomScale, setZoomScale] = useState(1.5);
   const [numPages, setNumPages] = useState<number>(1);
 
-  // Proxy URL ensures no CORS or x-frame issues
-  const proxyUrl = pdfUrl ? `/api/pdf-proxy?url=${encodeURIComponent(pdfUrl)}` : null;
+  // Static hosting: no server-side proxy. raw.githubusercontent.com allows
+  // cross-origin reads, and local files are resolved against the site base path.
+  const proxyUrl = pdfUrl ? assetUrl(pdfUrl) : null;
 
   useEffect(() => {
     let isCancelled = false;

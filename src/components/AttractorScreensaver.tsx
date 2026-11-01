@@ -18,6 +18,7 @@ import {
   Maximize2
 } from 'lucide-react';
 import { BUILT_HOMES_GALLERY, BuiltHomeSlide } from '../data/builtHomes';
+import { assetUrl } from '../lib/assetUrl';
 
 interface AttractorScreensaverProps {
   onDismiss: () => void;
@@ -134,7 +135,7 @@ export const AttractorScreensaver: React.FC<AttractorScreensaverProps> = ({
       <div className="absolute top-0 left-0 right-0 z-30 px-6 py-5 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <img 
-            src="/assets/aistudio/mvhBremertonCap_8f5d5a13.png" 
+            src={assetUrl("/assets/aistudio/mvhBremertonCap_8f5d5a13.png")} 
             alt="Mountain View Homes of Bremerton"
             className="w-12 h-12 object-contain drop-shadow-xl"
           />

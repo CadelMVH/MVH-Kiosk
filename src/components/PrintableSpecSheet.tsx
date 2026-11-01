@@ -17,6 +17,7 @@ import {
   Home, 
   Layers 
 } from 'lucide-react';
+import { assetUrl } from '../lib/assetUrl';
 
 interface PrintableSpecSheetProps {
   floorplan: Floorplan;
@@ -72,7 +73,7 @@ export const PrintableSpecSheet: React.FC<PrintableSpecSheetProps> = ({
               {/* Direct Link to Official Series PDF */}
               {seriesStandards.pdfAssetPath && (
                 <a
-                  href={seriesStandards.pdfAssetPath}
+                  href={assetUrl(seriesStandards.pdfAssetPath)}
                   target="_blank"
                   rel="noreferrer"
                   className="hidden md:flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold border border-slate-700 transition-colors"
@@ -109,7 +110,7 @@ export const PrintableSpecSheet: React.FC<PrintableSpecSheetProps> = ({
               <div className="flex items-start justify-between border-b-2 border-slate-900 pb-4">
                 <div className="flex items-center gap-3.5">
                   <img 
-                    src="/assets/aistudio/mvhBremertonCap_8f5d5a13.png" 
+                    src={assetUrl("/assets/aistudio/mvhBremertonCap_8f5d5a13.png")} 
                     alt="Mountain View Homes of Bremerton Logo" 
                     className="w-14 h-14 object-contain shrink-0"
                   />
@@ -237,7 +238,7 @@ export const PrintableSpecSheet: React.FC<PrintableSpecSheetProps> = ({
                   </div>
                   {seriesStandards.pdfAssetPath && (
                     <a
-                      href={seriesStandards.pdfAssetPath}
+                      href={assetUrl(seriesStandards.pdfAssetPath)}
                       target="_blank"
                       rel="noreferrer"
                       className="text-[10px] font-bold text-sky-700 hover:underline flex items-center gap-1"
@@ -326,7 +327,7 @@ export const PrintableSpecSheet: React.FC<PrintableSpecSheetProps> = ({
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #000', paddingBottom: '8px', marginBottom: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <img 
-              src="/assets/aistudio/mvhBremertonCap_8f5d5a13.png" 
+              src={assetUrl("/assets/aistudio/mvhBremertonCap_8f5d5a13.png")} 
               alt="Mountain View Homes of Bremerton Logo" 
               style={{ width: '50px', height: '50px', objectFit: 'contain' }}
             />

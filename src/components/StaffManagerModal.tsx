@@ -12,6 +12,7 @@ import {
   MessageSquare,
   AlertCircle
 } from 'lucide-react';
+import { assetUrl } from '../lib/assetUrl';
 
 interface StaffManagerModalProps {
   bookings: AppointmentBooking[];
@@ -48,7 +49,7 @@ export const StaffManagerModal: React.FC<StaffManagerModalProps> = ({
         <div className="flex items-center justify-between px-6 py-4 bg-slate-900 text-white">
           <div className="flex items-center gap-3">
             <img 
-              src="/assets/aistudio/mvhBremertonCap_8f5d5a13.png" 
+              src={assetUrl("/assets/aistudio/mvhBremertonCap_8f5d5a13.png")} 
               alt="Mountain View Homes of Bremerton Logo"
               className="w-10 h-10 object-contain shrink-0"
             />

@@ -37,6 +37,7 @@ import {
   ExternalLink,
   Play
 } from 'lucide-react';
+import { assetUrl } from './lib/assetUrl';
 
 const CURRENT_CATALOG_STORAGE_KEY = 'mvh_bremerton_catalog_2026_v5_master';
 
@@ -351,7 +352,7 @@ export default function App() {
               className="flex items-center gap-2.5 text-slate-900 whitespace-nowrap shrink-0 text-left cursor-pointer"
             >
               <img 
-                src="/assets/aistudio/mvhBremertonCap_8f5d5a13.png" 
+                src={assetUrl("/assets/aistudio/mvhBremertonCap_8f5d5a13.png")} 
                 alt="Mountain View Homes of Bremerton Logo"
                 className="w-11 h-11 object-contain drop-shadow-xs"
               />
@@ -555,7 +556,7 @@ export default function App() {
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <div className="flex items-center gap-3">
                 <img 
-                  src="/assets/aistudio/mvhBremertonCap_8f5d5a13.png" 
+                  src={assetUrl("/assets/aistudio/mvhBremertonCap_8f5d5a13.png")} 
                   alt="Mountain View Homes" 
                   className="w-12 h-12 object-contain"
                 />
