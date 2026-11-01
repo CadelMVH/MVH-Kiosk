@@ -45,137 +45,142 @@ export function extractClientDossier(
 
   // 1. Detect Client Name
   const nameMatch = query.match(/(?:my name is|i am|i'm|call me|this is)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/i);
-  if (nameMatch && nameMatch[1] && !['looking', 'interested', 'ready', 'here'].includes(nameMatch[1].toLowerCase())) {
+  if (nameMatch && nameMatch[1] && !['looking', 'interested', 'ready', 'here', 'wondering', 'hoping'].includes(nameMatch[1].toLowerCase())) {
     dossier.clientName = nameMatch[1].trim();
-    dossier.notes.push(`Client Name: ${dossier.clientName}`);
+    if (!dossier.notes.some(n => n.startsWith('Client Name:'))) {
+      dossier.notes.push(`Client Name: ${dossier.clientName}`);
+    }
   }
 
   // 2. Detect Phone Number
   const phoneMatch = query.match(/(?:\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})/);
   if (phoneMatch) {
     dossier.phone = phoneMatch[0].trim();
-    dossier.notes.push(`Phone: ${dossier.phone}`);
+    if (!dossier.notes.some(n => n.startsWith('Phone:'))) {
+      dossier.notes.push(`Phone: ${dossier.phone}`);
+    }
   }
 
   // 3. Detect Email
   const emailMatch = query.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
   if (emailMatch) {
     dossier.email = emailMatch[0].trim();
-    dossier.notes.push(`Email: ${dossier.email}`);
+    if (!dossier.notes.some(n => n.startsWith('Email:'))) {
+      dossier.notes.push(`Email: ${dossier.email}`);
+    }
   }
 
-  // 4. Detect Property & Land Status
-  const towns = ['poulsbo', 'port orchard', 'bremerton', 'silverdale', 'kingston', 'bainbridge', 'belfair', 'mason county', 'kitsap', 'gig harbor', 'allyn', 'shelton', 'seabeck', 'hansville'];
-  for (const town of towns) {
-    if (lower.includes(town)) {
-      const formattedTown = town.charAt(0).toUpperCase() + town.slice(1);
-      dossier.propertyLocation = formattedTown;
-      dossier.notes.push(`Location / Area of Interest: ${formattedTown}`);
+  // 4. Detect Property / Location
+  const cities = ['poulsbo', 'port orchard', 'bremerton', 'belfair', 'silverdale', 'kingston', 'bainbridge', 'seabeck', 'allyn', 'shelton', 'gig harbor'];
+  for (const city of cities) {
+    if (lower.includes(city)) {
+      const capCity = city.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+      dossier.propertyLocation = capCity;
+      if (!dossier.notes.some(n => n.includes(capCity))) {
+        dossier.notes.push(`Location / Area of Interest: ${capCity}`);
+      }
       break;
     }
   }
 
-  if (lower.includes('own land') || lower.includes('have land') || lower.includes('bought land') || lower.includes('my lot') || lower.includes('our parcel') || lower.includes('acre')) {
+  if (lower.includes('own land') || lower.includes('have land') || lower.includes('own property') || lower.includes('my property') || lower.includes('acres') || lower.includes('our lot') || lower.includes('my parcel')) {
     dossier.propertyStatus = 'Owns private land/parcel';
-    dossier.notes.push('Owns private property ready for installation');
-  } else if (lower.includes('looking for land') || lower.includes('need land') || lower.includes('shopping for property')) {
-    dossier.propertyStatus = 'Actively seeking land/parcel';
-    dossier.notes.push('Looking for land in Kitsap/Olympic Peninsula area');
-  } else if (lower.includes('park') || lower.includes('community') || lower.includes('mobile home park')) {
-    dossier.propertyStatus = 'Mobile home park community space';
-    dossier.notes.push('Planning placement in a manufactured home park');
-  } else if (lower.includes('adu') || lower.includes('casita') || lower.includes('backyard') || lower.includes('mother-in-law') || lower.includes('accessory')) {
-    dossier.propertyStatus = 'Accessory Dwelling Unit (ADU/Casita) on existing residential lot';
-    dossier.desiredSections = 'ADU / Single';
-    dossier.notes.push('ADU / Casita secondary residence placement');
+    if (!dossier.notes.some(n => n.includes('private property'))) {
+      dossier.notes.push('Owns private property ready for installation');
+    }
+  } else if (lower.includes('park') || lower.includes('community') || lower.includes('leased land')) {
+    dossier.propertyStatus = 'Manufactured home community / Park';
+  } else if (lower.includes('looking for land') || lower.includes('need land') || lower.includes('buying land')) {
+    dossier.propertyStatus = 'Shopping for land / lot';
   }
 
   // 5. Detect Bedrooms & Bathrooms
-  if (lower.includes('4 bed') || lower.includes('4-bed') || lower.includes('four bed')) dossier.bedroomsNeeded = 4;
-  else if (lower.includes('3 bed') || lower.includes('3-bed') || lower.includes('three bed')) dossier.bedroomsNeeded = 3;
-  else if (lower.includes('2 bed') || lower.includes('2-bed') || lower.includes('two bed')) dossier.bedroomsNeeded = 2;
-  else if (lower.includes('1 bed') || lower.includes('1-bed') || lower.includes('one bed')) dossier.bedroomsNeeded = 1;
+  if (lower.includes('5 bed') || lower.includes('5-bed') || lower.includes('5 bedroom') || lower.includes('five bed')) {
+    dossier.bedroomsNeeded = 5;
+  } else if (lower.includes('4 bed') || lower.includes('4-bed') || lower.includes('4 bedroom') || lower.includes('four bed')) {
+    dossier.bedroomsNeeded = 4;
+  } else if (lower.includes('3 bed') || lower.includes('3-bed') || lower.includes('3 bedroom') || lower.includes('three bed')) {
+    dossier.bedroomsNeeded = 3;
+  } else if (lower.includes('2 bed') || lower.includes('2-bed') || lower.includes('2 bedroom') || lower.includes('two bed')) {
+    dossier.bedroomsNeeded = 2;
+  } else if (lower.includes('1 bed') || lower.includes('1-bed') || lower.includes('single bed') || lower.includes('adu') || lower.includes('casita')) {
+    dossier.bedroomsNeeded = 1;
+  }
 
-  if (lower.includes('2 bath') || lower.includes('2-bath') || lower.includes('two bath')) dossier.bathroomsNeeded = 2;
-  else if (lower.includes('1 bath') || lower.includes('1-bath') || lower.includes('one bath')) dossier.bathroomsNeeded = 1;
+  if (lower.includes('3 bath') || lower.includes('three bath')) {
+    dossier.bathroomsNeeded = 3;
+  } else if (lower.includes('2 bath') || lower.includes('2.5 bath') || lower.includes('two bath')) {
+    dossier.bathroomsNeeded = 2;
+  } else if (lower.includes('1 bath') || lower.includes('one bath')) {
+    dossier.bathroomsNeeded = 1;
+  }
 
-  // 6. Detect Section Preferences
-  if (lower.includes('triple') || lower.includes('triple-wide') || lower.includes('estate')) dossier.desiredSections = 'Triple';
-  else if (lower.includes('double') || lower.includes('double-wide') || lower.includes('multi-section')) dossier.desiredSections = 'Double';
-  else if (lower.includes('single') || lower.includes('single-wide')) dossier.desiredSections = 'Single';
-
-  // 7. Detect Budget & Financing
-  const budgetMatch = query.match(/(?:under|below|budget|around|max)?\s*\$?(\d{2,3})(?:,\d{3}|k|000)/i);
+  // 6. Detect Budget
+  const budgetMatch = query.match(/(?:\$|budget\s*(?:of|is)?\s*)\s*(\d{2,3}(?:,\d{3})*(?:k|000)?)/i);
   if (budgetMatch) {
-    const rawNum = budgetMatch[1];
-    dossier.targetBudget = `$${rawNum},000`;
-    dossier.notes.push(`Target Budget: ~${dossier.targetBudget}`);
+    let raw = budgetMatch[1].toLowerCase().replace(/,/g, '');
+    let num = raw.includes('k') ? parseInt(raw.replace('k', ''), 10) * 1000 : parseInt(raw, 10);
+    if (!isNaN(num) && num > 20000) {
+      dossier.targetBudget = `$${num.toLocaleString()}`;
+      if (!dossier.notes.some(n => n.startsWith('Target Budget:'))) {
+        dossier.notes.push(`Target Budget: ${dossier.targetBudget}`);
+      }
+    }
   }
 
-  if (lower.includes('cash') || lower.includes('paying cash')) {
-    dossier.financingType = 'Cash Buyer';
-    dossier.notes.push('Financing: Cash buyer');
-  } else if (lower.includes('loan') || lower.includes('mortgage') || lower.includes('finance') || lower.includes('construction-to-perm') || lower.includes('chattel')) {
-    dossier.financingType = 'Financing / Construction Loan Needed';
-    dossier.notes.push('Financing: Inquiring about financing / loan packages');
-  }
-
-  // 8. Detect Must-Have Features
+  // 7. Detect Must-Have Features
   const featureKeywords: Record<string, string> = {
-    'porch': 'Covered Timber Porch',
     'island': 'Gourmet Kitchen Island',
-    'farmhouse': 'Farmhouse Sink & Style',
-    'tub': 'Soaking Garden Tub',
-    'glamour': 'Glamour Spa Bathroom',
-    'shower': 'Walk-in Ceramic Tile Shower',
-    'fireplace': 'Stone Fireplace',
-    'skid': '4x6 Skid Foundation System',
-    'vaulted': 'Vaulted Ceilings',
-    'garage': 'Garage Ready Prep',
-    'energy star': 'Energy Star High-Efficiency Package',
-    'drywall': 'Tape & Texture Drywall Throughout',
-    'pantry': 'Walk-in Pantry'
+    'pantry': 'Walk-In Pantry',
+    'porch': 'Front Covered Porch',
+    'tub': 'Free-Standing Soaking Tub',
+    'walk-in shower': 'Walk-In Tile Shower',
+    'tile shower': 'Walk-In Tile Shower',
+    'heat pump': 'Energy Star Heat Pump HVAC',
+    'zerh': 'Zero Energy Ready Home (ZERH)',
+    'crawlspace': 'Load-Bearing Crawlspace Foundation',
+    'fireplace': 'Fireplace Package',
+    'farmhouse': 'Farmhouse Sink & Trim',
+    'open concept': 'Open Great Room Layout',
+    'double wide': 'Multi-Section Double Wide',
+    'single wide': 'Single Wide Section',
+    'adu': 'Accessory Dwelling Unit (ADU)'
   };
 
-  for (const [key, label] of Object.entries(featureKeywords)) {
-    if (lower.includes(key) && !dossier.mustHaveFeatures.includes(label)) {
+  for (const [kw, label] of Object.entries(featureKeywords)) {
+    if (lower.includes(kw) && !dossier.mustHaveFeatures.includes(label)) {
       dossier.mustHaveFeatures.push(label);
     }
   }
 
-  // 9. Detect Timeline
-  if (lower.includes('asap') || lower.includes('immediately') || lower.includes('right away') || lower.includes('next month')) {
-    dossier.timeline = 'Immediate / Ready to order';
-  } else if (lower.includes('spring') || lower.includes('summer') || lower.includes('few months') || lower.includes('3 months')) {
-    dossier.timeline = 'Spring / Next 3-6 Months';
-  } else if (lower.includes('just looking') || lower.includes('exploring') || lower.includes('browsing') || lower.includes('next year')) {
-    dossier.timeline = 'Exploring Options / 6-12 Months';
-  }
-
-  // 10. Record Interested Floorplan
+  // 8. Track Interested Models
   if (matchedPlan?.name && !dossier.interestedPlanNames.includes(matchedPlan.name)) {
     dossier.interestedPlanNames.push(matchedPlan.name);
   }
 
-  // Deduplicate notes
-  dossier.notes = Array.from(new Set(dossier.notes));
+  // 9. Generate Concise Consultation Summary for Sales Agents
+  const parts: string[] = [];
+  parts.push(dossier.clientName ? `Client ${dossier.clientName}` : 'Showroom Guest');
+  if (dossier.propertyLocation) parts.push(`in ${dossier.propertyLocation}`);
+  if (dossier.propertyStatus) parts.push(`(${dossier.propertyStatus})`);
+  if (dossier.bedroomsNeeded) parts.push(`Looking for ${dossier.bedroomsNeeded}-bed / ${dossier.bathroomsNeeded || 2}-bath`);
+  if (dossier.targetBudget) parts.push(`Target budget ${dossier.targetBudget}`);
+  if (dossier.mustHaveFeatures.length > 0) parts.push(`Wishlist: ${dossier.mustHaveFeatures.slice(0, 3).join(', ')}`);
+  if (dossier.interestedPlanNames.length > 0) parts.push(`Favorited: ${dossier.interestedPlanNames.slice(-2).join(', ')}`);
 
-  // Synthesize sales summary for agents
-  const clientRef = dossier.clientName ? `Client ${dossier.clientName}` : 'Showroom Guest';
-  const landRef = dossier.propertyLocation ? `in ${dossier.propertyLocation}` : (dossier.propertyStatus ? `(${dossier.propertyStatus})` : '');
-  const bedRef = dossier.bedroomsNeeded ? `${dossier.bedroomsNeeded}-bed` : '';
-  const budgetRef = dossier.targetBudget ? `around ${dossier.targetBudget}` : '';
-  const featuresRef = dossier.mustHaveFeatures.length > 0 ? `Interested in: ${dossier.mustHaveFeatures.slice(0, 3).join(', ')}.` : '';
-  const modelRef = dossier.interestedPlanNames.length > 0 ? `Favorited: ${dossier.interestedPlanNames.join(', ')}.` : '';
-
-  dossier.consultationSummary = `${clientRef} ${landRef}. Looking for ${bedRef || 'manufactured home'} ${budgetRef}. ${featuresRef} ${modelRef}`.trim();
+  dossier.consultationSummary = parts.join('. ') + '.';
 
   return dossier;
 }
 
 /**
- * Intelligent, comprehensive HOM̂ER conversational engine.
- * Maintains context, performs real app actions, and avoids repetitive default answers.
+ * Intelligent domain reasoning engine for Mountain View Homes of Bremerton.
+ * Synthesizes:
+ * - 145 Floorplans and 69 3D Virtual Tours
+ * - Clayton Albany Homeowner's Manual (Warranties, Systems, Ventilation, Care)
+ * - Site Construction Manual 2025 (Site Prep, Foundations, Crawlspaces, Crossovers)
+ * - Zero Energy Ready Home (ZERH v1) & Energy Star specifications
+ * - Directives: Never introduce yourself. Directly answer questions and reason about client requirements.
  */
 export function statefulHomerEngine({
   query,
@@ -185,10 +190,10 @@ export function statefulHomerEngine({
 }: ProcessQueryParams): AiQueryResult {
   const lower = query.toLowerCase();
 
-  // 1. Check for Direct Navigation / View Switch Commands
+  // 1. View / Gallery Navigation Actions
   if (lower.includes('slideshow') || lower.includes('screensaver')) {
     return {
-      conversationalResponse: "**Hi, I'm HOM̂ER!** Starting our showroom fullscreen photo slideshow featuring homes Mountain View Homes has built and delivered across Kitsap County!",
+      conversationalResponse: "Starting the showroom fullscreen slideshow featuring real homes built and installed across Kitsap and Mason County.",
       action: 'open_slideshow',
       navigationTarget: 'slideshow',
       clientDossier: extractClientDossier(query, history, dossier)
@@ -207,14 +212,14 @@ export function statefulHomerEngine({
     (lower.includes('built') && (lower.includes('photo') || lower.includes('picture') || lower.includes('show')))
   ) {
     return {
-      conversationalResponse: "**Hi, I'm HOM̂ER!** Opening our photo gallery of **12 real homes we have built and installed** in Bremerton, Poulsbo, Port Orchard, and across the Olympic Peninsula!",
+      conversationalResponse: "Opening our photo portfolio of **12 real homes built and installed** in Bremerton, Poulsbo, Port Orchard, and across the Olympic Peninsula.",
       action: 'open_built_homes',
       navigationTarget: 'built-homes',
       clientDossier: extractClientDossier(query, history, dossier)
     };
   }
 
-  // 2. Human Escalation / Specialist Hand-Off
+  // 2. Sales Specialist Consultation & Appointment Hand-Off
   if (
     lower.includes('speak with') || 
     lower.includes('talk to') || 
@@ -229,17 +234,81 @@ export function statefulHomerEngine({
     lower.includes('apply')
   ) {
     const updatedDossier = extractClientDossier(query, history, dossier);
-    const summary = updatedDossier.consultationSummary || 'Guest ready for consultation';
+    const summary = updatedDossier.consultationSummary || 'Guest ready for showroom consultation';
 
     return {
-      conversationalResponse: "**Hi, I'm HOM̂ER!** It sounds like you're ready to get into the details! I have packaged up our notes on your preferences and am waving down one of our design specialists right now to meet with you.",
+      conversationalResponse: `Connecting you with our sales desk right now. I have summarized your preferences into a consultation brief so our design specialist has all your requirements ready.\n\n• **Client Summary:** ${summary}\n\nPlease confirm your name and phone number on screen to be greeted immediately.`,
       action: 'schedule_appointment',
       clientDossier: updatedDossier,
-      followUpPrompt: "Please confirm your name and phone number on the waitlist desk so our consultant can greet you."
+      followUpPrompt: "Please verify your contact details so our specialist can step over."
     };
   }
 
-  // 3. Permitting & Zoning in Kitsap County
+  // 3. Site Preparation, Grading, and Foundation Engineering (from Site Construction Manual 2025)
+  if (
+    lower.includes('site prep') || 
+    lower.includes('grading') || 
+    lower.includes('drainage') || 
+    lower.includes('crawlspace') || 
+    lower.includes('footing') || 
+    lower.includes('frost line') ||
+    lower.includes('pier') ||
+    lower.includes('anchor') ||
+    lower.includes('foundation') ||
+    lower.includes('soil')
+  ) {
+    const updatedDossier = extractClientDossier(query, history, dossier);
+    return {
+      conversationalResponse: `Here are our certified engineering requirements for site preparation and foundations:\n\n• **Site Grading & Drainage:** Ground must be graded with a minimum slope of **5 inches within the first 10 feet** away from the home perimeter to prevent water ponding under the crawlspace.\n• **Foundation Types:**\n  - **Load-Bearing Perimeter Crawlspace:** Continuous concrete strip footing or poured slab with 2x6 or 2x10 pressure-treated sill plates bolted to the foundation wall and recessed frame.\n  - **Pier & Ground Anchor:** Engineered concrete block piers on 4" precast or poured footings, secured with 3,150 lb rated soil anchors and stabilizer plates.\n• **Frost Depth:** Footings must be placed below the local design frost depth (12"–18" across the Puget Sound region).\n• **Moisture Barrier & Ventilation:** A **6-mil continuous polyethylene ground vapor barrier** overlapping 12" is required, paired with crawlspace skirting providing 1 sq ft of free ventilation per 1,500 sq ft of floor area equipped with rodent-proof operable dampers.\n\n*Would you like to review specific models that fit your parcel, or schedule a free site consultation?*`,
+      action: 'general_advice',
+      clientDossier: updatedDossier,
+      followUpPrompt: "Do you have a specific property parcel you are planning to build on?"
+    };
+  }
+
+  // 4. Energy Efficiency & Zero Energy Ready Home (ZERH v1 / Energy Star)
+  if (
+    lower.includes('energy') || 
+    lower.includes('insulation') || 
+    lower.includes('zerh') || 
+    lower.includes('heat pump') || 
+    lower.includes('hvac') || 
+    lower.includes('duct') || 
+    lower.includes('r-value') ||
+    lower.includes('thermal') ||
+    lower.includes('ventilation') ||
+    lower.includes('window')
+  ) {
+    const updatedDossier = extractClientDossier(query, history, dossier);
+    return {
+      conversationalResponse: `Our homes are built to exceed Pacific Northwest climate demands with **Zero Energy Ready Home (ZERH v1)** and **Energy Star** specifications:\n\n• **Thermal Envelope:** Advanced high-efficiency insulation with **R-38 in ceilings**, **R-21 in exterior 2x6 walls**, and **R-22 in floors**.\n• **Heating & Cooling:** High-efficiency ducted heat pumps providing whisper-quiet heating and summer air conditioning.\n• **Hybrid Water Heating:** Energy-efficient heat pump water heaters with dedicated drain pan and exterior T/P relief lines.\n• **Continuous Air Quality:** HUD Code 24 CFR 3280 compliant **Whole-House Ventilation System** providing balanced fresh air exchanges without thermal loss.\n• **Windows & Sealing:** Low-E argon insulated vinyl windows and continuous non-porous marriage wall gaskets on all multi-section sets.\n\n*Would you like to step inside one of our 3D walkthroughs to see these energy-efficient layouts?*`,
+      action: 'general_advice',
+      clientDossier: updatedDossier,
+      followUpPrompt: "Would you like me to filter for our most energy-efficient double-wide models?"
+    };
+  }
+
+  // 5. Warranty & Construction Quality (from Clayton Albany Homeowner's Manual)
+  if (
+    lower.includes('warranty') || 
+    lower.includes('defect') || 
+    lower.includes('guarantee') || 
+    lower.includes('maintenance') || 
+    lower.includes('albany') || 
+    lower.includes('hud code') ||
+    lower.includes('plumbing') ||
+    lower.includes('electrical')
+  ) {
+    const updatedDossier = extractClientDossier(query, history, dossier);
+    return {
+      conversationalResponse: `Here is an overview of our manufacturer warranty and factory-built quality standards:\n\n• **Clayton Albany 1-Year Limited Warranty:** 12 months of comprehensive warranty coverage from the date of initial installation covering structural systems, factory plumbing, electrical, and materials.\n• **Cosmetic Defect Reporting:** 30-day reporting window for any transit cosmetic items (drywall adjustments, trim, and floor transitions).\n• **Electrical Systems:** 100A or 200A 120/240V AC service panels with dedicated 4-wire feeders, isolated neutral bars, and GFI protection at kitchen countertops, baths, and exterior heat tape outlets.\n• **Plumbing & Safety:** FlowGuard Gold or PEX water systems designed for up to 80 psi with factory-calibrated anti-scald mixing valves preset to 105°F (max safe limit 120°F).\n• **Annual Care:** Routine homeowner maintenance includes yearly roof and gutter inspections, annual check of the crawlspace belly board (Flex-Mend sealing), and verifying home level within 90 days of set.\n\n*Would you like to print a certified factory spec sheet for a specific model?*`,
+      action: 'general_advice',
+      clientDossier: updatedDossier,
+      followUpPrompt: "Ask for any model's spec sheet or warranty details."
+    };
+  }
+
+  // 6. Kitsap & Mason County Permitting
   if (
     lower.includes('permit') || 
     lower.includes('zoning') || 
@@ -254,32 +323,24 @@ export function statefulHomerEngine({
     const loc = updatedDossier.propertyLocation || 'Kitsap County';
 
     return {
-      conversationalResponse: `**Hi, I'm HOM̂ER!** For placing a manufactured home in **${loc}**, here are the key guidelines:\n\n• **Residential Placement Permit (RPP):** Handled through the Kitsap County Department of Community Development (DCD)\n• **Health District:** Septic system review or public sewer availability is required before placement\n• **ADU Casitas:** Secondary dwelling units up to 900 sq ft are widely permitted on qualifying single-family residential parcels\n• **4x6 Skid Foundation:** Our engineered skid tie-downs satisfy local frost-depth, high-wind, and seismic anchoring codes\n\n*Would you like me to note your parcel details for our site evaluation specialist, or show you our popular ADU casitas?*`,
+      conversationalResponse: `For installing a manufactured home in **${loc}**, the critical local requirements include:\n\n• **Residential Placement Permit (RPP):** Submitted directly through the Kitsap County Department of Community Development (DCD) or Mason County Community Services.\n• **Health District Approval:** Septic design verification or public sewer availability letter must be secured before permit issuance.\n• **Accessory Dwelling Units (ADUs):** Detached or attached ADU Casitas up to 900 sq ft are permitted on qualifying residential parcels.\n• **Engineered Foundation Review:** SAA/L&I certified foundation and tie-down plan conforming to local wind and frost penetration codes.\n\n*Would you like our site evaluation coordinator to review your parcel?*`,
       action: 'general_advice',
       clientDossier: updatedDossier,
-      followUpPrompt: "Do you already have a parcel tax number or address in Kitsap County?"
+      followUpPrompt: "Do you have your parcel tax ID or address ready?"
     };
   }
 
-  // 4. Foundation & 4x6 Skid Framing Specs
-  if (
-    lower.includes('skid') || 
-    lower.includes('framing') || 
-    lower.includes('foundation') || 
-    lower.includes('4x6') || 
-    lower.includes('chassis') || 
-    lower.includes('joist') || 
-    lower.includes('seismic') ||
-    lower.includes('construction')
-  ) {
+  // 7. Series Comparison: Tempo vs Inspiration Gold vs Dream Silver
+  if (lower.includes('difference') || lower.includes('compare') || (lower.includes('tempo') && lower.includes('gold')) || (lower.includes('silver') && lower.includes('gold'))) {
+    const updatedDossier = extractClientDossier(query, history, dossier);
     return {
-      conversationalResponse: `**Hi, I'm HOM̂ER!** Mountain View Homes builds with our heavy-duty **Pacific Northwest 4x6 Skid Foundation System**:\n\n• **Ground-Contact 4x6 Skids:** Pressure-treated continuous runners elevate the chassis for optimal moisture airflow in our damp climate\n• **Transverse Floor Joists:** 2x6 or 2x8 joists spaced 16" on-center anchored securely with engineered tie-downs\n• **Steel I-Beam Frame:** Structural steel chassis with full outriggers for Washington State L&I seismic and wind zone ratings\n\n*Would you like to step inside a 3D virtual tour or print a certified factory spec sheet?*`,
-      action: 'general_advice',
-      clientDossier: extractClientDossier(query, history, dossier)
+      conversationalResponse: `Here is a breakdown of our primary home series:\n\n• **Tempo Series (Clayton Homes):**\n  - Outstanding modern value with open-concept great rooms, clean shaker cabinetry, and built-in entertainment spaces.\n  - Great for both private acreage and family neighborhoods.\n• **Inspiration Gold Series (Golden West):**\n  - Premium craftsmanship with upgraded **2x6 exterior walls**, high roof pitches with architectural shingles, crown molding, and luxury master bath suites with free-standing tubs.\n• **Dream Silver Series (Golden West):**\n  - Efficient layouts ranging from compact **409 sq ft ADU Casitas** to spacious family multi-sections, featuring durable finishes and energy-smart packages.\n\n*Which series matches what you have in mind?*`,
+      action: 'filter_catalog',
+      clientDossier: updatedDossier
     };
   }
 
-  // 5. Greetings & Open Inquiries
+  // 8. Greetings & Open Questions (No Self-Introduction!)
   if (
     lower.startsWith('hi') || 
     lower.startsWith('hello') || 
@@ -290,14 +351,14 @@ export function statefulHomerEngine({
     lower === 'help'
   ) {
     return {
-      conversationalResponse: `**Good day! I'm HOM̂ER** (Home Options & Model Exploration Resource), your showroom guide here at Mountain View Homes of Bremerton!\n\nI can help you browse our **145 manufactured homes**, step inside **69 interactive 3D virtual tours**, review **4x6 skid framing specs**, or print spec sheets.\n\n*To help me find your best match: Do you already have a piece of land in Kitsap or Mason County, or are you shopping for property?*`,
+      conversationalResponse: `Welcome to Mountain View Homes of Bremerton! You can explore **145 manufactured homes**, step inside **69 interactive 3D virtual walkthroughs**, review site installation requirements, or customize decor options.\n\n*To help find your ideal floorplan: How many bedrooms do you need, and do you already have a parcel in Kitsap or Mason County?*`,
       action: 'general_advice',
       clientDossier: extractClientDossier(query, history, dossier),
-      followUpPrompt: "Tell me if you have land or what bedroom count you need!"
+      followUpPrompt: "Share your target bedroom count or property location."
     };
   }
 
-  // 6. Responses about Having Land / Location
+  // 9. Responses About Having Land or Location
   if (
     lower.includes('have land') || 
     lower.includes('own land') || 
@@ -306,30 +367,30 @@ export function statefulHomerEngine({
     lower.includes('port orchard') || 
     lower.includes('bremerton') || 
     lower.includes('belfair') || 
-    lower.includes('silverdale')
+    lower.includes('silverdale') ||
+    lower.includes('kingston')
   ) {
     const updatedDossier = extractClientDossier(query, history, dossier);
-    const loc = updatedDossier.propertyLocation || 'your property';
+    const loc = updatedDossier.propertyLocation || 'your land';
 
-    // Recommend top popular double-wide or multi-section homes suited for private land
-    const topPick = catalog.find(h => h.hasTour && h.bedrooms === 3 && h.sections === 'Double') || catalog[1];
+    const topPick = catalog.find(h => h.hasTour && h.bedrooms === (updatedDossier.bedroomsNeeded || 3) && h.sections === 'Double') || 
+                    catalog.find(h => h.hasTour && h.bedrooms === 3) || 
+                    catalog[1];
 
     return {
-      conversationalResponse: `**That's wonderful!** Having land in **${loc}** is a huge advantage. Our homes are engineered specifically for Pacific Northwest lots with our moisture-resistant **4x6 skid foundation system**.\n\nA great home to consider is the **${topPick.name}** (${topPick.squareFeet.toLocaleString()} sq ft, ${topPick.bedrooms} bed, ${topPick.bathrooms} bath) with an interactive 3D virtual tour ready to view.\n\n*How many bedrooms and bathrooms does your family need?*`,
+      conversationalResponse: `Having property in **${loc}** gives you incredible flexibility. For private acreage, our double-wide models provide generous open-concept floorplans and full Energy Star packages.\n\nA great model to explore is the **${topPick.name}** (${topPick.squareFeet.toLocaleString()} sq ft, ${topPick.bedrooms} bed, ${topPick.bathrooms} bath) with a full 3D walkthrough.\n\n*Would you like to step inside the 3D tour, or see all matching floorplans?*`,
       matchedFloorplanId: topPick.id,
       action: 'open_floorplan',
       clientDossier: updatedDossier
     };
   }
 
-  // 7. Search & Matching Logic
-  // Look for direct model matches first
+  // 10. Floorplan Search & Intent Reasoning
   let matched = catalog.find(h => lower.includes(h.name.toLowerCase()));
 
-  // If no direct name match, match by specific customer criteria
   if (!matched) {
     const wantsTour = lower.includes('tour') || lower.includes('3d') || lower.includes('walkthrough') || lower.includes('inside') || lower.includes('virtual');
-    const isAduOrCasita = lower.includes('adu') || lower.includes('casita') || lower.includes('tiny') || lower.includes('cottage') || lower.includes('backyard') || lower.includes('1 bed');
+    const isAduOrCasita = lower.includes('adu') || lower.includes('casita') || lower.includes('tiny') || lower.includes('cottage') || lower.includes('backyard') || lower.includes('1 bed') || lower.includes('one bed');
     const wants3Bed = lower.includes('3 bed') || lower.includes('3-bed') || lower.includes('three bed');
     const wants4Bed = lower.includes('4 bed') || lower.includes('4-bed') || lower.includes('four bed');
     const wants2Bed = lower.includes('2 bed') || lower.includes('2-bed') || lower.includes('two bed');
@@ -342,8 +403,8 @@ export function statefulHomerEngine({
       else if (wantsTempo) matched = catalog.find(h => h.hasTour && h.series === 'Tempo');
       else if (wantsGoldenWest) matched = catalog.find(h => h.hasTour && (h.series === 'Inspiration Gold' || h.manufacturer === 'Golden West'));
       else if (wantsMarlette) matched = catalog.find(h => h.hasTour && h.manufacturer === 'Marlette');
-      else if (wants3Bed) matched = catalog.find(h => h.hasTour && h.bedrooms === 3 && h.sections === 'Double');
       else if (wants4Bed) matched = catalog.find(h => h.hasTour && h.bedrooms === 4);
+      else if (wants3Bed) matched = catalog.find(h => h.hasTour && h.bedrooms === 3 && h.sections === 'Double');
       else if (wants2Bed) matched = catalog.find(h => h.hasTour && h.bedrooms === 2);
       else matched = catalog.find(h => h.hasTour && h.series === 'Tempo') || catalog.find(h => h.hasTour);
     } else if (isAduOrCasita) {
@@ -365,9 +426,8 @@ export function statefulHomerEngine({
     } else if (lower.includes('porch')) {
       matched = catalog.find(h => h.name.toLowerCase().includes('porch') || h.description.toLowerCase().includes('porch'));
     } else if (lower.includes('island')) {
-      matched = catalog.find(h => h.description.toLowerCase().includes('island') && h.hasTour);
+      matched = catalog.find(h => h.description.toLowerCase().includes('island') && h.hasTour) || catalog.find(h => h.description.toLowerCase().includes('island'));
     } else {
-      // Pick a flagship popular model, NOT always Casita!
       matched = catalog.find(h => h.series === 'Tempo' && h.bedrooms === 3) || catalog.find(h => h.series === 'Inspiration Gold') || catalog[0];
     }
   }
@@ -376,28 +436,28 @@ export function statefulHomerEngine({
 
   const updatedDossier = extractClientDossier(query, history, dossier, matched);
 
-  // 8. Determine Action and Construct Natural Response
+  // 11. Determine Action and Direct Response (No Self-Introduction!)
   if (lower.includes('tour') || lower.includes('3d') || lower.includes('walkthrough') || lower.includes('step inside')) {
     return {
-      conversationalResponse: `**Hi, I'm HOM̂ER!** Stepping inside the interactive **3D Virtual Tour for the ${matched.name}**! You can explore the living room, kitchen, and bedrooms right now on screen.`,
+      conversationalResponse: `Stepping inside the **3D Virtual Tour for the ${matched.name}**! You can explore the living space, kitchen layout, and bedrooms on screen.`,
       matchedFloorplanId: matched.id,
       action: 'open_3d_tour',
       clientDossier: updatedDossier
     };
   }
 
-  if (lower.includes('print') || lower.includes('spec sheet') || lower.includes('take home')) {
+  if (lower.includes('print') || lower.includes('spec sheet') || lower.includes('take home') || lower.includes('blueprint')) {
     return {
-      conversationalResponse: `**Hi, I'm HOM̂ER!** Preparing the Take-Home Spec Sheet for the **${matched.name}** with its certified architectural blueprint and ${matched.series} standards for printing!`,
+      conversationalResponse: `Preparing the printable **Take-Home Spec Sheet for the ${matched.name}**, featuring its architectural blueprint and certified factory standards.`,
       matchedFloorplanId: matched.id,
       action: 'print_spec',
       clientDossier: updatedDossier
     };
   }
 
-  if (lower.includes('customize') || lower.includes('detail') || lower.includes('options') || lower.includes('cabinet') || lower.includes('countertop')) {
+  if (lower.includes('customize') || lower.includes('options') || lower.includes('decor') || lower.includes('cabinet') || lower.includes('countertop')) {
     return {
-      conversationalResponse: `**Hi, I'm HOM̂ER!** Opening the custom finish configurator for the **${matched.name}**. You can choose cabinet finishes, countertops, and luxury upgrades.`,
+      conversationalResponse: `Opening the custom finish configurator for the **${matched.name}**. You can review available cabinet options, countertops, and luxury upgrades.`,
       matchedFloorplanId: matched.id,
       action: 'open_floorplan',
       clientDossier: updatedDossier
@@ -410,10 +470,10 @@ export function statefulHomerEngine({
   if (matched.bathrooms) filterDesc += `**${matched.bathrooms} baths**, `;
   filterDesc += `and **${matched.squareFeet.toLocaleString()} sq ft**`;
 
-  const tourNote = matched.hasTour ? " It also has an interactive **3D virtual tour** available!" : "";
+  const tourNote = matched.hasTour ? " An interactive **3D virtual walkthrough** is available to explore." : "";
 
   return {
-    conversationalResponse: `**Hi, I'm HOM̂ER!** I recommend looking at the **${matched.name}** by **${matched.manufacturer}** (${matched.series} Series). It features ${filterDesc}.${tourNote}\n\n*Would you like me to open the 3D virtual tour, customize finishes, or wave down a design specialist?*`,
+    conversationalResponse: `Take a look at the **${matched.name}** by **${matched.manufacturer}** (${matched.series} Series). It features ${filterDesc}.${tourNote}\n\n*Would you like to open the 3D walkthrough, customize options, or connect with a specialist?*`,
     matchedFloorplanId: matched.id,
     action: 'filter_catalog',
     clientDossier: updatedDossier,
