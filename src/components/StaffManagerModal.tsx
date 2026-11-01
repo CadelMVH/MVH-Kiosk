@@ -164,6 +164,31 @@ export const StaffManagerModal: React.FC<StaffManagerModalProps> = ({
                                 Note: "{booking.notes}"
                               </p>
                             )}
+
+                            {booking.clientDossier && (
+                              <div className="mt-1.5 flex flex-wrap gap-1.5 text-[10px]">
+                                {booking.clientDossier.propertyLocation && (
+                                  <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 font-semibold">
+                                    📍 {booking.clientDossier.propertyLocation}
+                                  </span>
+                                )}
+                                {booking.clientDossier.targetBudget && (
+                                  <span className="px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 font-mono font-bold">
+                                    💰 {booking.clientDossier.targetBudget}
+                                  </span>
+                                )}
+                                {booking.clientDossier.bedroomsNeeded && (
+                                  <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-200">
+                                    🛏️ {booking.clientDossier.bedroomsNeeded} Beds
+                                  </span>
+                                )}
+                                {booking.clientDossier.mustHaveFeatures?.slice(0, 3).map((feat, fi) => (
+                                  <span key={fi} className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
+                                    ✓ {feat}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         </div>
 

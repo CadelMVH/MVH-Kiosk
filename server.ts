@@ -41,128 +41,14 @@ const INVENTORY_SUMMARY = floorplansCatalog
   .map(h => `ID: "${h.id}" | Name: "${h.name}" | Mfr: "${h.manufacturer}" | Series: "${h.series}" | Beds: ${h.bedrooms} | Baths: ${h.bathrooms} | SqFt: ${h.squareFeet} | ${h.sections} Section | Tour: ${h.hasTour ? 'Yes' : 'No'}`)
   .join('\n');
 
-// Resilient Catalog Matcher Helper
-function fallbackCatalogMatcher(query: string) {
-  const lower = query.toLowerCase();
-
-  // Try direct model name match
-  let matched = floorplansCatalog.find(h => lower.includes(h.name.toLowerCase()));
-
-  if (!matched) {
-    if (lower.includes('tour') || lower.includes('3d') || lower.includes('walkthrough')) {
-      if (lower.includes('casita') || lower.includes('adu')) {
-        matched = floorplansCatalog.find(h => h.hasTour && h.name.toLowerCase().includes('casita'));
-      } else if (lower.includes('tempo')) {
-        matched = floorplansCatalog.find(h => h.hasTour && h.series === 'Tempo');
-      } else if (lower.includes('marlette') || lower.includes('majestic')) {
-        matched = floorplansCatalog.find(h => h.hasTour && (h.manufacturer === 'Marlette' || h.series === 'Majestic'));
-      } else if (lower.includes('golden west') || lower.includes('inspiration')) {
-        matched = floorplansCatalog.find(h => h.hasTour && (h.manufacturer === 'Golden West' || h.series === 'Inspiration Gold'));
-      } else if (lower.includes('single')) {
-        matched = floorplansCatalog.find(h => h.hasTour && h.sections === 'Single');
-      } else if (lower.includes('double')) {
-        matched = floorplansCatalog.find(h => h.hasTour && h.sections === 'Double');
-      } else {
-        matched = floorplansCatalog.find(h => h.hasTour);
-      }
-    } else if (lower.includes('casita') || lower.includes('adu') || lower.includes('tiny')) {
-      matched = floorplansCatalog.find(h => h.name.toLowerCase().includes('casita') || h.squareFeet < 600);
-    } else if (lower.includes('tempo')) {
-      matched = floorplansCatalog.find(h => h.series === 'Tempo');
-    } else if (lower.includes('inspiration') || lower.includes('gold')) {
-      matched = floorplansCatalog.find(h => h.series === 'Inspiration Gold');
-    } else if (lower.includes('silver')) {
-      matched = floorplansCatalog.find(h => h.series === 'Dream Silver');
-    } else if (lower.includes('majestic')) {
-      matched = floorplansCatalog.find(h => h.series === 'Majestic');
-    } else if (lower.includes('imagine')) {
-      matched = floorplansCatalog.find(h => h.series === 'Imagine');
-    } else if (lower.includes('columbia')) {
-      matched = floorplansCatalog.find(h => h.series === 'Columbia River');
-    } else if (lower.includes('marlette')) {
-      matched = floorplansCatalog.find(h => h.manufacturer === 'Marlette');
-    } else if (lower.includes('golden west')) {
-      matched = floorplansCatalog.find(h => h.manufacturer === 'Golden West');
-    } else if (lower.includes('clayton')) {
-      matched = floorplansCatalog.find(h => h.manufacturer === 'Clayton Homes');
-    } else if (lower.includes('4 bed') || lower.includes('4 bedroom') || lower.includes('four bedroom')) {
-      matched = floorplansCatalog.find(h => h.bedrooms === 4);
-    } else if (lower.includes('3 bed') || lower.includes('3 bedroom') || lower.includes('three bedroom')) {
-      matched = floorplansCatalog.find(h => h.bedrooms === 3 && h.hasTour) || floorplansCatalog.find(h => h.bedrooms === 3);
-    } else if (lower.includes('2 bed') || lower.includes('2 bedroom') || lower.includes('two bedroom')) {
-      matched = floorplansCatalog.find(h => h.bedrooms === 2 && h.hasTour) || floorplansCatalog.find(h => h.bedrooms === 2);
-    } else if (lower.includes('1 bed') || lower.includes('1 bedroom') || lower.includes('one bedroom')) {
-      matched = floorplansCatalog.find(h => h.bedrooms === 1);
-    } else if (lower.includes('triple') || lower.includes('triple-wide')) {
-      matched = floorplansCatalog.find(h => h.sections === 'Triple');
-    } else if (lower.includes('double') || lower.includes('double-wide')) {
-      matched = floorplansCatalog.find(h => h.sections === 'Double' && h.hasTour);
-    } else if (lower.includes('single') || lower.includes('single-wide')) {
-      matched = floorplansCatalog.find(h => h.sections === 'Single' && h.hasTour);
-    } else {
-      matched = floorplansCatalog.find(h => h.hasTour) || floorplansCatalog[0];
-    }
-  }
-
-  if (!matched) matched = floorplansCatalog[0];
-
-  let action = 'filter_catalog';
-  let response = `I found ${matched.name} by ${matched.manufacturer}! It features ${matched.bedrooms} bedrooms, ${matched.bathrooms} bathrooms, and ${matched.squareFeet.toLocaleString()} square feet.`;
-
-  if (lower.includes('tour') || lower.includes('3d') || lower.includes('walkthrough')) {
-    action = 'open_3d_tour';
-    response = `Opening the 3D virtual tour for ${matched.name}! You can explore the full interior walkthrough right on the screen.`;
-  } else if (lower.includes('print')) {
-    action = 'print_spec';
-    response = `Preparing the official ${matched.name} specification sheet and floorplan summary for printing.`;
-  } else if (lower.includes('appointment') || lower.includes('talk to') || lower.includes('sales') || lower.includes('wait') || lower.includes('meet') || lower.includes('consultant')) {
-    action = 'schedule_appointment';
-    response = "I'm opening our showroom waitlist and appointment desk so you can meet with a Mountain View Homes consultant.";
-  } else if (lower.includes('open') || lower.includes('detail') || lower.includes('customize')) {
-    action = 'open_floorplan';
-    response = `Here are the specifications and customizable options for ${matched.name}.`;
-  }
-
-  // Filter extractions
-  let extractedManu = undefined;
-  if (lower.includes('marlette')) extractedManu = 'Marlette';
-  else if (lower.includes('golden west')) extractedManu = 'Golden West';
-  else if (lower.includes('clayton')) extractedManu = 'Clayton Homes';
-
-  let extractedSeries = undefined;
-  if (lower.includes('tempo')) extractedSeries = 'Tempo';
-  else if (lower.includes('silver')) extractedSeries = 'Dream Silver';
-  else if (lower.includes('inspiration')) extractedSeries = 'Inspiration Gold';
-  else if (lower.includes('majestic')) extractedSeries = 'Majestic';
-  else if (lower.includes('imagine')) extractedSeries = 'Imagine';
-  else if (lower.includes('columbia')) extractedSeries = 'Columbia River';
-
-  let extractedBeds = undefined;
-  if (lower.includes('4 bed') || lower.includes('4 bedroom') || lower.includes('four bed')) extractedBeds = 4;
-  else if (lower.includes('3 bed') || lower.includes('3 bedroom') || lower.includes('three bed')) extractedBeds = 3;
-  else if (lower.includes('2 bed') || lower.includes('2 bedroom') || lower.includes('two bed')) extractedBeds = 2;
-  else if (lower.includes('1 bed') || lower.includes('1 bedroom') || lower.includes('one bed')) extractedBeds = 1;
-
-  const hasTour = lower.includes('tour') || lower.includes('3d') || lower.includes('walkthrough') ? true : undefined;
-
-  return {
-    conversationalResponse: response,
-    matchedFloorplanId: matched.id,
-    action,
-    extractedFilters: {
-      manufacturer: extractedManu,
-      series: extractedSeries,
-      minBeds: extractedBeds,
-      hasTour,
-    }
-  };
-}
+import { statefulHomerEngine } from './src/server/homerEngine.ts';
 
 // Health check endpoint
 app.get('/api/health', (_req, res) => {
   res.json({
     status: 'ok',
     kiosk: 'Mountain View Homes of Bremerton Terminal #1',
+    aiGuide: 'HOM̂ER (Home Options & Model Exploration Resource)',
     modelsLoaded: floorplansCatalog.length,
     toursAvailable: floorplansCatalog.filter(h => h.hasTour).length
   });
@@ -176,81 +62,146 @@ app.get('/api/inventory', (_req, res) => {
   });
 });
 
+// In-memory cache for floorplan PDFs to ensure instant kiosk printing & viewing
+const pdfCache = new Map<string, Buffer>();
+
+// Floorplan PDF proxy endpoint for reliable rendering & printing
+app.get('/api/pdf-proxy', async (req, res) => {
+  const targetUrl = req.query.url as string;
+  if (!targetUrl) {
+    return res.status(400).send('Missing url parameter');
+  }
+
+  // Handle local workspace assets
+  if (targetUrl.startsWith('/assets/')) {
+    const localPath = path.join(__dirname, 'public', targetUrl);
+    if (fs.existsSync(localPath)) {
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+      return res.sendFile(localPath);
+    }
+  }
+
+  // Serve from in-memory cache if available
+  if (pdfCache.has(targetUrl)) {
+    const cachedBuffer = pdfCache.get(targetUrl)!;
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    return res.send(cachedBuffer);
+  }
+
+  try {
+    const fetchResponse = await fetch(targetUrl);
+    if (!fetchResponse.ok) {
+      return res.status(fetchResponse.status).send('Failed to fetch remote PDF');
+    }
+    const arrayBuffer = await fetchResponse.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    pdfCache.set(targetUrl, buffer);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    return res.send(buffer);
+  } catch (err: any) {
+    console.error('Error proxying floorplan PDF:', err.message);
+    return res.status(500).send('Error retrieving PDF: ' + err.message);
+  }
+});
+
 // AI Kiosk Query Endpoint
 app.post('/api/ai/query', async (req, res) => {
   try {
-    const { query } = req.body;
+    const { query, conversationHistory, clientDossier } = req.body;
     if (!query || typeof query !== 'string') {
       return res.status(400).json({ error: 'Query is required' });
     }
 
-    // If no API key is provided, return intelligent rule-based match from the spreadsheet
-    if (!process.env.GEMINI_API_KEY) {
-      console.log('[Kiosk Server] Using local catalog matcher (no API key)');
-      return res.json(fallbackCatalogMatcher(query));
-    }
+    // Always compute stateful client dossier & intelligent recommendation
+    const statefulResult = statefulHomerEngine({
+      query,
+      history: conversationHistory,
+      dossier: clientDossier,
+      catalog: floorplansCatalog
+    });
 
-    const systemPrompt = `You are the friendly, intelligent showroom AI concierge at Mountain View Homes of Bremerton dealership kiosk in Kitsap County, WA.
-We have 145 manufactured and modular homes from Golden West, Marlette, and Clayton Homes.
-Here is a representative sample of popular models:
-${INVENTORY_SUMMARY}
+    // If Gemini API is available and has active credits, attempt Gemini 3.8 Flash
+    if (process.env.GEMINI_API_KEY) {
+      try {
+        const historyContext = Array.isArray(conversationHistory)
+          ? conversationHistory.slice(-6).map((m: any) => `${m.role === 'user' ? 'Client' : 'HOMER'}: ${m.content}`).join('\n')
+          : '';
 
-When clients speak in plain English:
-- If they ask for a 3D tour or walkthrough, set action to "open_3d_tour" and match the floorplan ID.
-- If they ask to print specs or a floorplan sheet, set action to "print_spec" and match the floorplan ID.
-- If they want to speak with a sales consultant, make an appointment, or join the showroom waitlist, set action to "schedule_appointment".
-- If they describe bedroom counts, size, series, or features, match the best floorplan and set action to "open_floorplan" or "filter_catalog".
-- Provide a warm, concise 1-2 sentence spoken response suitable for a showroom kiosk voice assistant. Mention Mountain View Homes or the model name naturally.`;
+        const systemPrompt = `You are HOM̂ER (Home Options & Model Exploration Resource), the digital showroom guide for Mountain View Homes of Bremerton in Kitsap County, WA.
+We have 145 manufactured homes, 69 3D tours, and 12 built homes.
 
-    try {
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: query,
-        config: {
-          systemInstruction: systemPrompt,
-          responseMimeType: 'application/json',
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              conversationalResponse: {
-                type: Type.STRING,
-                description: 'Clear, concise 1-2 sentence friendly response spoken aloud to the customer.'
-              },
-              matchedFloorplanId: {
-                type: Type.STRING,
-                description: 'The exact ID of the best matching floorplan from the inventory.'
-              },
-              action: {
-                type: Type.STRING,
-                description: 'The UI action: filter_catalog, open_floorplan, open_3d_tour, print_spec, schedule_appointment, or general_advice'
-              },
-              extractedFilters: {
-                type: Type.OBJECT,
-                properties: {
-                  series: { type: Type.STRING },
-                  manufacturer: { type: Type.STRING },
-                  minBeds: { type: Type.INTEGER },
-                  minBaths: { type: Type.NUMBER },
-                  maxPrice: { type: Type.NUMBER },
-                  hasTour: { type: Type.BOOLEAN }
+# CLIENT INTERVIEW & NOTE-TAKING DIRECTIVE
+- Actively gather information on walk-in clients: ask about their land/property location (Poulsbo, Port Orchard, Bremerton, etc.), bedroom needs, and budget.
+- Never give walls of text. Use **bold** text and short bullets.
+- Available actions: "open_3d_tour", "print_spec", "open_built_homes", "open_slideshow", "schedule_appointment", "open_floorplan", "filter_catalog", "general_advice".
+- If client wants to buy, apply for financing, or speak to someone: set action to "schedule_appointment".
+
+Current Client Dossier:
+${JSON.stringify(statefulResult.clientDossier || {})}
+
+Recent Conversation History:
+${historyContext}
+
+Popular Models Sample:
+${INVENTORY_SUMMARY}`;
+
+        const response = await ai.models.generateContent({
+          model: 'gemini-3.8-flash',
+          contents: `Client query: "${query}"`,
+          config: {
+            systemInstruction: systemPrompt,
+            responseMimeType: 'application/json',
+            responseSchema: {
+              type: Type.OBJECT,
+              properties: {
+                conversationalResponse: {
+                  type: Type.STRING,
+                  description: 'Concise response as HOMER formatted with bold text and short bullets.'
+                },
+                matchedFloorplanId: { type: Type.STRING },
+                action: { type: Type.STRING },
+                extractedFilters: {
+                  type: Type.OBJECT,
+                  properties: {
+                    series: { type: Type.STRING },
+                    manufacturer: { type: Type.STRING },
+                    minBeds: { type: Type.INTEGER },
+                    minBaths: { type: Type.NUMBER },
+                    hasTour: { type: Type.BOOLEAN }
+                  }
                 }
-              }
-            },
-            required: ['conversationalResponse', 'action']
+              },
+              required: ['conversationalResponse', 'action']
+            }
           }
-        }
-      });
+        });
 
-      const parsed = JSON.parse(response.text || '{}');
-      return res.json(parsed);
-    } catch (apiError: any) {
-      console.warn('[Kiosk Server] Gemini API error, falling back to local catalog matcher:', apiError.message);
-      // Seamless fallback ensures kiosk never shows a blank or broken state to a customer in the showroom
-      return res.json(fallbackCatalogMatcher(query));
+        const parsed = JSON.parse(response.text || '{}');
+        parsed.clientDossier = statefulResult.clientDossier;
+        return res.json(parsed);
+      } catch (geminiError: any) {
+        console.warn('[HOMER Server] Gemini API call note:', geminiError.message);
+        return res.json(statefulResult);
+      }
     }
+
+    return res.json(statefulResult);
   } catch (error: any) {
     console.error('Gemini API query handler error:', error);
-    return res.json(fallbackCatalogMatcher(req.body?.query || ''));
+    const fallback = statefulHomerEngine({
+      query: req.body?.query || 'help',
+      history: req.body?.conversationHistory,
+      dossier: req.body?.clientDossier,
+      catalog: floorplansCatalog
+    });
+    return res.json(fallback);
   }
 });
 

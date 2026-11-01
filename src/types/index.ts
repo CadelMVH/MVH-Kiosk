@@ -96,6 +96,27 @@ export interface SelectedOptions {
   porchPackageId?: string;
 }
 
+export interface ClientLeadDossier {
+  clientName?: string;
+  phone?: string;
+  email?: string;
+  targetBudget?: string;
+  propertyStatus?: string; // e.g. "Owns land in Poulsbo", "Looking for land in Kitsap", "Park space"
+  propertyLocation?: string; // e.g. "Bremerton", "Poulsbo", "Silverdale", "Port Orchard", "Mason County"
+  bedroomsNeeded?: number;
+  bathroomsNeeded?: number;
+  desiredSections?: string; // Single, Double, Triple, ADU
+  preferredManufacturer?: string; // Golden West, Marlette, Clayton Homes
+  preferredSeries?: string;
+  timeline?: string; // Immediate, 3-6 months, Exploring
+  financingType?: string; // Cash, Construction Loan, Chattel, VA
+  mustHaveFeatures: string[];
+  interestedPlanNames: string[];
+  consultationSummary?: string;
+  notes: string[];
+  lastUpdated?: string;
+}
+
 export interface AppointmentBooking {
   id: string;
   ticketNumber: string;
@@ -110,12 +131,19 @@ export interface AppointmentBooking {
   partySize: number;
   status: 'waiting' | 'called' | 'in_consultation' | 'scheduled' | 'completed';
   createdAt: string;
+  clientDossier?: ClientLeadDossier;
+}
+
+export interface AiChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp?: string;
 }
 
 export interface AiQueryResult {
   conversationalResponse: string;
   matchedFloorplanId?: string;
-  action: 'filter_catalog' | 'open_floorplan' | 'open_3d_tour' | 'print_spec' | 'schedule_appointment' | 'general_advice';
+  action: 'filter_catalog' | 'open_floorplan' | 'open_3d_tour' | 'print_spec' | 'schedule_appointment' | 'general_advice' | 'open_built_homes' | 'open_slideshow';
   extractedFilters?: {
     series?: string;
     manufacturer?: string;
@@ -123,5 +151,9 @@ export interface AiQueryResult {
     minBaths?: number;
     maxPrice?: number;
     hasTour?: boolean;
+    section?: string;
   };
+  clientDossier?: ClientLeadDossier;
+  followUpPrompt?: string;
+  navigationTarget?: string;
 }

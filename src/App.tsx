@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Floorplan, SelectedOptions, AppointmentBooking, AiQueryResult } from './types';
+import { Floorplan, SelectedOptions, AppointmentBooking, AiQueryResult, ClientLeadDossier } from './types';
 import { INITIAL_FLOORPLANS, INITIAL_BOOKINGS } from './data/floorplans';
 import { VoiceAssistantBar } from './components/VoiceAssistantBar';
 import { FloorplanCard } from './components/FloorplanCard';
@@ -15,6 +15,7 @@ import { AppointmentWaitlistModal } from './components/AppointmentWaitlistModal'
 import { StaffManagerModal } from './components/StaffManagerModal';
 import { AttractorScreensaver } from './components/AttractorScreensaver';
 import { OnPageTourShowcase } from './components/OnPageTourShowcase';
+import { HomesWeHaveBuiltGallery } from './components/HomesWeHaveBuiltGallery';
 import { 
   Building2, 
   Clock, 
@@ -33,7 +34,8 @@ import {
   Phone,
   Compass,
   CheckCircle2,
-  ExternalLink
+  ExternalLink,
+  Play
 } from 'lucide-react';
 
 const CURRENT_CATALOG_STORAGE_KEY = 'mvh_bremerton_catalog_2026_v5_master';
@@ -69,8 +71,8 @@ export default function App() {
     return saved ? JSON.parse(saved) : INITIAL_BOOKINGS;
   });
 
-  // Top view mode: 'catalog' | '3d-theater' | 'dealership-info'
-  const [activeViewMode, setActiveViewMode] = useState<'catalog' | '3d-theater' | 'dealership-info'>('catalog');
+  // Top view mode: 'catalog' | 'built-homes' | '3d-theater' | 'dealership-info'
+  const [activeViewMode, setActiveViewMode] = useState<'catalog' | 'built-homes' | '3d-theater' | 'dealership-info'>('catalog');
 
   // Filter State
   const [selectedManufacturer, setSelectedManufacturer] = useState<string>('All');
@@ -104,6 +106,7 @@ export default function App() {
   } | null>(null);
   const [isAppointmentModalOpen, setIsAppointmentModalOpen] = useState(false);
   const [appointmentSelectedPlan, setAppointmentSelectedPlan] = useState<Floorplan | null>(null);
+  const [currentClientDossier, setCurrentClientDossier] = useState<ClientLeadDossier | undefined>(undefined);
   const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
 
   // Inactivity screensaver state (2 minutes)
@@ -179,6 +182,11 @@ export default function App() {
   const handleAiAction = (result: AiQueryResult) => {
     resetInactivityTimer();
 
+    // 0. Store updated client consultation dossier
+    if (result.clientDossier) {
+      setCurrentClientDossier(result.clientDossier);
+    }
+
     // 1. Filter updates
     if (result.extractedFilters) {
       if (result.extractedFilters.manufacturer) {
@@ -214,6 +222,12 @@ export default function App() {
         break;
       case 'print_spec':
         setActivePrintPlan({ floorplan: matchedPlan, totalPrice: matchedPlan.basePrice });
+        break;
+      case 'open_slideshow':
+        setIsScreensaverActive(true);
+        break;
+      case 'open_built_homes':
+        setActiveViewMode('built-homes');
         break;
       case 'schedule_appointment':
         setAppointmentSelectedPlan(matchedPlan);
@@ -307,6 +321,19 @@ export default function App() {
             setIsScreensaverActive(false);
             resetInactivityTimer();
           }} 
+          onSelectHome={(floorplanId) => {
+            setIsScreensaverActive(false);
+            resetInactivityTimer();
+            const plan = floorplans.find(f => f.id === floorplanId);
+            if (plan) {
+              if (plan.hasTour) {
+                setOnPageTourPlan(plan);
+                setActiveTourPlan(plan);
+              } else {
+                setActiveDetailPlan(plan);
+              }
+            }
+          }}
         />
       )}
 
@@ -343,7 +370,7 @@ export default function App() {
           </div>
 
           {/* Clean Navigation Links with 3D Tour Theater */}
-          <nav className="hidden md:flex items-center gap-6 text-sm font-semibold text-slate-600">
+          <nav className="hidden md:flex items-center gap-5 text-sm font-semibold text-slate-600">
             <button 
               onClick={() => {
                 setActiveViewMode('catalog');
@@ -354,6 +381,20 @@ export default function App() {
               }`}
             >
               Floorplans Catalog ({stats.total})
+            </button>
+
+            <button 
+              onClick={() => {
+                setActiveViewMode('built-homes');
+              }}
+              className={`transition-colors whitespace-nowrap shrink-0 flex items-center gap-1.5 cursor-pointer px-2.5 py-1 rounded-lg ${
+                activeViewMode === 'built-homes'
+                  ? 'bg-amber-50 text-amber-900 font-bold border border-amber-300' 
+                  : 'hover:text-slate-900 text-slate-700'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+              <span>Homes We've Built (12)</span>
             </button>
             
             <button 
@@ -390,8 +431,17 @@ export default function App() {
             </button>
           </nav>
 
-          {/* Join Showroom Waitlist */}
-          <div className="flex items-center gap-3 shrink-0">
+          {/* Action Buttons: Slideshow & Showroom Waitlist */}
+          <div className="flex items-center gap-2.5 shrink-0">
+            <button
+              onClick={() => setIsScreensaverActive(true)}
+              className="hidden lg:flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-800 rounded-xl text-xs font-bold transition-all border border-slate-200 cursor-pointer"
+              title="Launch full-screen kiosk slideshow of built homes"
+            >
+              <Play className="w-3.5 h-3.5 fill-slate-800 text-slate-800" />
+              <span>Slideshow</span>
+            </button>
+
             <button
               onClick={() => {
                 setAppointmentSelectedPlan(null);
@@ -417,18 +467,18 @@ export default function App() {
         
         {/* Dealership Showroom Banner & Live Status Strip */}
         <div className="relative rounded-2xl overflow-hidden border border-slate-200/90 shadow-xs bg-slate-900 text-white">
-          <div className="absolute inset-0 opacity-35">
+          <div className="absolute inset-0 opacity-40">
             <img 
-              src="/src/assets/images/hero_dealership_showroom_1793126179418.jpg" 
-              alt="Mountain View Homes of Bremerton Display Park"
+              src="https://static.wixstatic.com/media/866235_c39eaa6bd99a45649f99387daa9f0934~mv2.webp" 
+              alt="Mountain View Homes of Bremerton Real Built Home"
               className="w-full h-full object-cover"
               referrerPolicy="no-referrer"
             />
           </div>
-          <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-950/75 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-950/80 to-slate-950/50" />
 
           <div className="relative z-10 p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="max-w-xl space-y-2">
+            <div className="max-w-xl space-y-2.5">
               <div className="inline-flex items-center gap-2 text-xs font-semibold text-emerald-400 uppercase tracking-widest">
                 <Sparkles className="w-3.5 h-3.5" />
                 <span>Mountain View Homes of Bremerton · Display Center</span>
@@ -436,9 +486,39 @@ export default function App() {
               <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white">
                 Pacific Northwest Manufactured & Modular Living
               </h1>
-              <p className="text-xs md:text-sm text-slate-300 leading-relaxed">
-                Explore {stats.total} factory-built homes from Golden West, Marlette, and Clayton Homes. Step inside {stats.toursCount} interactive 3D virtual tours right on this kiosk screen, customize finishes, and print take-home specification sheets.
+              <p className="text-xs md:text-sm text-slate-300 leading-relaxed font-normal">
+                Explore {stats.total} factory-built homes from Golden West, Marlette, and Clayton Homes. Step inside {stats.toursCount} interactive 3D virtual tours right on this kiosk screen, view real homes we have built across Kitsap & the Olympic Peninsula, customize finishes, and print take-home specification sheets.
               </p>
+              
+              {/* Quick Navigation Chips */}
+              <div className="pt-1 flex flex-wrap items-center gap-2">
+                <button
+                  onClick={() => setActiveViewMode('built-homes')}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-400/20 hover:bg-amber-400/30 text-amber-200 border border-amber-400/40 text-xs font-bold transition-all cursor-pointer"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                  <span>View Homes We've Built (12)</span>
+                </button>
+
+                <button
+                  onClick={() => setIsScreensaverActive(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white border border-white/20 text-xs font-bold transition-all cursor-pointer"
+                >
+                  <Play className="w-3 h-3 fill-white" />
+                  <span>Launch Slideshow</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setActiveViewMode('3d-theater');
+                    setTourOnly(true);
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-400/30 text-xs font-bold transition-all cursor-pointer"
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                  <span>3D Virtual Tours ({stats.toursCount})</span>
+                </button>
+              </div>
             </div>
 
             {/* Live Showroom Queue & Wait Time Card */}
@@ -460,8 +540,14 @@ export default function App() {
           </div>
         </div>
 
-        {/* AI Voice Assistant Bar */}
-        <VoiceAssistantBar onAiAction={handleAiAction} />
+        {/* HOM̂ER AI Kiosk Concierge & Voice Station */}
+        <VoiceAssistantBar 
+          onAiAction={handleAiAction} 
+          onRequestSpecialist={(dossier) => {
+            if (dossier) setCurrentClientDossier(dossier);
+            setIsAppointmentModalOpen(true);
+          }}
+        />
 
         {/* Dealership Info Panel (when activeViewMode === 'dealership-info') */}
         {activeViewMode === 'dealership-info' && (
@@ -538,9 +624,26 @@ export default function App() {
           </div>
         )}
 
-        {/* ON-PAGE INTERACTIVE 3D TOUR THEATER */}
-        {/* Shows whenever 3D theater view is active OR as the centerpiece above the catalog */}
-        {(activeViewMode === '3d-theater' || tourOnly) && (
+        {/* HOMES WE HAVE BUILT GALLERY VIEW */}
+        {activeViewMode === 'built-homes' && (
+          <HomesWeHaveBuiltGallery
+            floorplans={floorplans}
+            onOpenSlideshow={() => setIsScreensaverActive(true)}
+            onOpenTour={(plan) => {
+              setOnPageTourPlan(plan);
+              setActiveTourPlan(plan);
+            }}
+            onSelectDetail={(plan) => setActiveDetailPlan(plan)}
+            onPrint={(plan) => setActivePrintPlan({ floorplan: plan, totalPrice: plan.basePrice })}
+          />
+        )}
+
+        {/* CATALOG & 3D THEATER VIEWS */}
+        {activeViewMode !== 'built-homes' && (
+          <>
+            {/* ON-PAGE INTERACTIVE 3D TOUR THEATER */}
+            {/* Shows whenever 3D theater view is active OR as the centerpiece above the catalog */}
+            {(activeViewMode === '3d-theater' || tourOnly) && (
           <OnPageTourShowcase
             floorplansWithTours={floorplansWithTours}
             activeTourPlan={onPageTourPlan}
@@ -855,6 +958,8 @@ export default function App() {
             )}
           </>
         )}
+          </>
+        )}
 
       </main>
 
@@ -962,6 +1067,7 @@ export default function App() {
       {isAppointmentModalOpen && (
         <AppointmentWaitlistModal
           floorplan={appointmentSelectedPlan}
+          clientDossier={currentClientDossier}
           onClose={() => setIsAppointmentModalOpen(false)}
           currentQueueLength={activeQueueCount}
           onBookingConfirmed={(booking) => {

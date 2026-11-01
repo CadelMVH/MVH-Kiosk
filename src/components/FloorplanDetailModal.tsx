@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Floorplan, SelectedOptions } from '../types';
 import { FloorplanBlueprint } from './FloorplanBlueprint';
+import { FloorplanPdfRenderer } from './FloorplanPdfRenderer';
 import { FACTORY_UPGRADE_PACKAGES, DECOR_MATRIX } from '../data/factoryOptions';
+import { getSeriesStandards } from '../data/seriesStandards';
 import { 
   X, 
   Eye, 
@@ -731,58 +733,125 @@ export const FloorplanDetailModal: React.FC<FloorplanDetailModalProps> = ({
           {/* TAB 3: ARCHITECTURAL BLUEPRINT */}
           {activeTab === 'blueprint' && (
             <div className="p-6 space-y-4">
-              <FloorplanBlueprint floorplan={floorplan} />
+              {floorplan.floorplanPdf ? (
+                <FloorplanPdfRenderer 
+                  pdfUrl={floorplan.floorplanPdf} 
+                  planName={floorplan.name} 
+                />
+              ) : (
+                <FloorplanBlueprint floorplan={floorplan} />
+              )}
             </div>
           )}
 
-          {/* TAB 4: MANUFACTURER SPECIFICATIONS */}
-          {activeTab === 'specs' && (
-            <div className="p-6 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
-                  <h4 className="font-bold text-xs uppercase tracking-wider text-slate-500">Certified Structural Envelope</h4>
-                  <div className="space-y-2 text-xs text-slate-700">
-                    <div className="flex justify-between py-1 border-b border-slate-200">
-                      <span className="text-slate-500">Exterior Framing:</span>
-                      <span className="font-medium text-slate-900">{floorplan.specs.framing}</span>
-                    </div>
-                    <div className="flex justify-between py-1 border-b border-slate-200">
-                      <span className="text-slate-500">Thermal Insulation:</span>
-                      <span className="font-medium text-slate-900">{floorplan.specs.insulation}</span>
-                    </div>
-                    <div className="flex justify-between py-1 border-b border-slate-200">
-                      <span className="text-slate-500">Roof Load & Pitch:</span>
-                      <span className="font-medium text-slate-900">{floorplan.specs.roofPitch}</span>
-                    </div>
-                    <div className="flex justify-between py-1 border-b border-slate-200">
-                      <span className="text-slate-500">Exterior Cladding:</span>
-                      <span className="font-medium text-slate-900">{floorplan.specs.exteriorSiding}</span>
-                    </div>
-                    <div className="flex justify-between py-1">
-                      <span className="text-slate-500">Building Code:</span>
-                      <span className="font-medium text-slate-900">{floorplan.specs.hudCodeCertification}</span>
-                    </div>
+          {/* TAB 4: MANUFACTURER SPECIFICATIONS & SERIES STANDARDS */}
+          {activeTab === 'specs' && (() => {
+            const seriesStandards = getSeriesStandards(floorplan.series, floorplan.manufacturer);
+            return (
+              <div className="p-6 space-y-6">
+                {/* Series Standards Highlight Card */}
+                <div className="bg-gradient-to-r from-slate-900 to-slate-950 text-white rounded-2xl p-5 border border-slate-800 shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                  <div>
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-amber-400 bg-amber-400/10 px-2.5 py-0.5 rounded-full border border-amber-400/20">
+                      Certified Factory Standards
+                    </span>
+                    <h3 className="text-lg font-bold text-white mt-1">
+                      {seriesStandards.seriesName} Standard Features ({seriesStandards.year})
+                    </h3>
+                    <p className="text-xs text-slate-300 mt-0.5">
+                      {seriesStandards.tagline}
+                    </p>
+                  </div>
+                  {seriesStandards.pdfAssetPath && (
+                    <a
+                      href={seriesStandards.pdfAssetPath}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center gap-2 px-4 py-2 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs rounded-xl transition-all shadow-md shrink-0"
+                    >
+                      <FileText className="w-4 h-4" />
+                      <span>View Factory Standards PDF</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
+                </div>
+
+                {/* 4-Column Grid of Series Specifications */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* Construction */}
+                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                    <span className="font-bold text-xs uppercase tracking-wider text-slate-900 flex items-center gap-1.5">
+                      <Layers className="w-3.5 h-3.5 text-amber-600" />
+                      <span>Construction & Frame</span>
+                    </span>
+                    <ul className="text-xs text-slate-600 space-y-1.5 pl-3 list-disc">
+                      {seriesStandards.construction.map((item, idx) => (
+                        <li key={idx} className="leading-relaxed">{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* Exterior & Roofing */}
+                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                    <span className="font-bold text-xs uppercase tracking-wider text-slate-900 flex items-center gap-1.5">
+                      <Home className="w-3.5 h-3.5 text-sky-600" />
+                      <span>Exterior & Envelope</span>
+                    </span>
+                    <ul className="text-xs text-slate-600 space-y-1.5 pl-3 list-disc">
+                      {seriesStandards.exterior.map((item, idx) => (
+                        <li key={idx} className="leading-relaxed">{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* Kitchen & Interior */}
+                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                    <span className="font-bold text-xs uppercase tracking-wider text-slate-900 flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Kitchen & Living</span>
+                    </span>
+                    <ul className="text-xs text-slate-600 space-y-1.5 pl-3 list-disc">
+                      {seriesStandards.kitchen.map((item, idx) => (
+                        <li key={idx} className="leading-relaxed">{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* Insulation & Utilities */}
+                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                    <span className="font-bold text-xs uppercase tracking-wider text-slate-900 flex items-center gap-1.5">
+                      <Zap className="w-3.5 h-3.5 text-indigo-600" />
+                      <span>Thermal & Utility</span>
+                    </span>
+                    <ul className="text-xs text-slate-600 space-y-1.5 pl-3 list-disc">
+                      {seriesStandards.energySaving.concat(seriesStandards.utilityAndHeating.slice(0, 3)).map((item, idx) => (
+                        <li key={idx} className="leading-relaxed">{item}</li>
+                      ))}
+                    </ul>
                   </div>
                 </div>
 
+                {/* Additional Model-Specific Raw Factory Specs */}
                 {floorplan.rawSpecs && (
                   <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
-                    <h4 className="font-bold text-xs uppercase tracking-wider text-slate-500">Factory Systems & Mechanical</h4>
-                    <div className="space-y-2 text-xs text-slate-700">
+                    <h4 className="font-bold text-xs uppercase tracking-wider text-slate-500">
+                      Detailed Model Systems & Mechanicals ({floorplan.name})
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-slate-700">
                       <div>
-                        <div className="font-semibold text-slate-900">Plumbing & Electrical:</div>
-                        <p className="text-[11px] text-slate-600 mt-0.5">{floorplan.rawSpecs.utilities}</p>
+                        <div className="font-semibold text-slate-900">Plumbing & Electrical Notes:</div>
+                        <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">{floorplan.rawSpecs.utilities}</p>
                       </div>
-                      <div className="pt-2 border-t border-slate-200">
-                        <div className="font-semibold text-slate-900">Kitchen & Bath Appointments:</div>
-                        <p className="text-[11px] text-slate-600 mt-0.5">{floorplan.rawSpecs.kitchenBath}</p>
+                      <div>
+                        <div className="font-semibold text-slate-900">Kitchen & Bath Fixture Notes:</div>
+                        <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">{floorplan.rawSpecs.kitchenBath}</p>
                       </div>
                     </div>
                   </div>
                 )}
               </div>
-            </div>
-          )}
+            );
+          })()}
 
         </div>
 

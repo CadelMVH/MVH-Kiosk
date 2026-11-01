@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Floorplan, AppointmentBooking } from '../types';
+import { Floorplan, AppointmentBooking, ClientLeadDossier } from '../types';
 import { 
   X, 
   Calendar, 
@@ -12,11 +12,13 @@ import {
   Sparkles, 
   ArrowRight,
   Ticket,
-  MessageSquare
+  MessageSquare,
+  HardHat
 } from 'lucide-react';
 
 interface AppointmentWaitlistModalProps {
   floorplan?: Floorplan | null;
+  clientDossier?: ClientLeadDossier;
   onClose: () => void;
   onBookingConfirmed: (booking: AppointmentBooking) => void;
   currentQueueLength: number;
@@ -24,6 +26,7 @@ interface AppointmentWaitlistModalProps {
 
 export const AppointmentWaitlistModal: React.FC<AppointmentWaitlistModalProps> = ({
   floorplan,
+  clientDossier,
   onClose,
   onBookingConfirmed,
   currentQueueLength,
@@ -31,12 +34,15 @@ export const AppointmentWaitlistModal: React.FC<AppointmentWaitlistModalProps> =
   const [activeTab, setActiveTab] = useState<'live_waitlist' | 'future_appointment'>('live_waitlist');
   const [confirmedBooking, setConfirmedBooking] = useState<AppointmentBooking | null>(null);
 
-  // Form State
-  const [clientName, setClientName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
+  // Form State pre-filled from HOMER's gathered consultation dossier
+  const [clientName, setClientName] = useState(clientDossier?.clientName || '');
+  const [phone, setPhone] = useState(clientDossier?.phone || '');
+  const [email, setEmail] = useState(clientDossier?.email || '');
   const [partySize, setPartySize] = useState(2);
-  const [notes, setNotes] = useState('');
+  const [notes, setNotes] = useState(
+    clientDossier?.consultationSummary || 
+    (clientDossier?.notes && clientDossier.notes.length > 0 ? clientDossier.notes.join(' · ') : '')
+  );
   const [date, setDate] = useState('2026-10-28');
   const [timeSlot, setTimeSlot] = useState('11:00 AM');
   const [consultationTopic, setConsultationTopic] = useState('Pricing & Custom Floorplans');
@@ -55,11 +61,19 @@ export const AppointmentWaitlistModal: React.FC<AppointmentWaitlistModalProps> =
       type: activeTab,
       date: activeTab === 'live_waitlist' ? 'Today' : date,
       timeSlot: activeTab === 'live_waitlist' ? 'Now (Queue)' : timeSlot,
-      interestedPlanName: floorplan?.name || 'General Manufactured Homes',
+      interestedPlanName: floorplan?.name || (clientDossier?.interestedPlanNames?.[0]) || 'General Manufactured Homes',
       notes: notes.trim() || `${consultationTopic} consultation requested.`,
       partySize,
       status: activeTab === 'live_waitlist' ? 'waiting' : 'scheduled',
       createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      clientDossier: clientDossier || {
+        clientName: clientName.trim(),
+        phone: phone.trim(),
+        email: email.trim() || undefined,
+        mustHaveFeatures: [],
+        interestedPlanNames: floorplan ? [floorplan.name] : [],
+        notes: [notes.trim()]
+      }
     };
 
     setConfirmedBooking(newBooking);
@@ -220,6 +234,24 @@ export const AppointmentWaitlistModal: React.FC<AppointmentWaitlistModalProps> =
                 </div>
                 <div className="text-right font-mono font-bold text-slate-800">
                   ${floorplan.basePrice.toLocaleString()}
+                </div>
+              </div>
+            )}
+
+            {/* HOMER Consultation Brief Callout */}
+            {clientDossier && (clientDossier.propertyLocation || clientDossier.consultationSummary || clientDossier.mustHaveFeatures.length > 0) && (
+              <div className="p-3 bg-amber-50/80 rounded-xl border border-amber-200/90 text-xs flex items-start gap-2.5">
+                <HardHat className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+                <div className="flex-1">
+                  <div className="font-bold text-amber-950 flex items-center justify-between">
+                    <span>HOM̂ER's Consultation Brief Attached</span>
+                    <span className="text-[10px] bg-amber-200/70 text-amber-900 px-2 py-0.5 rounded font-mono">
+                      Sales Desk Ready
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-amber-900 mt-0.5 leading-relaxed">
+                    {clientDossier.consultationSummary || clientDossier.notes.join(' · ')}
+                  </p>
                 </div>
               </div>
             )}
